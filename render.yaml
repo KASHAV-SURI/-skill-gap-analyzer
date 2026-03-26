@@ -3,7 +3,7 @@ services:
     name: skillgap
     env: node
     rootDir: backend
-    buildCommand: npm install && npm --prefix ../frontend install && npm --prefix ../frontend run build
+    buildCommand: npm install && npm --prefix ../frontend install --include=dev && npm --prefix ../frontend run build
     startCommand: npm start
     autoDeploy: true
     envVars:
