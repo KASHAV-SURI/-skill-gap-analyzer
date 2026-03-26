@@ -1,0 +1,127 @@
+@import "tailwindcss";
+
+@theme {
+	--color-brand-50: #eff6ff;
+	--color-brand-100: #dbeafe;
+	--color-brand-400: #60a5fa;
+	--color-brand-500: #3b82f6;
+	--color-brand-600: #2563eb;
+	--color-brand-700: #1d4ed8;
+	--color-accent-400: #22d3ee;
+	--color-accent-500: #06b6d4;
+}
+
+:root {
+	--bg: #0f172a;
+	--surface: #1e293b;
+	--card: #1e293b;
+	--border: rgba(255,255,255,0.1);
+	--accent-blue: #3B82F6;
+	--accent-green: #10B981;
+	--accent-amber: #F59E0B;
+	--accent-purple: #8B5CF6;
+	--text: #f1f5f9;
+	--muted: #94a3b8;
+}
+
+* { box-sizing: border-box; }
+
+body {
+	margin: 0;
+	background: var(--bg);
+	color: var(--text);
+	font-family: system-ui, -apple-system, sans-serif;
+	-webkit-font-smoothing: antialiased;
+	min-height: 100vh;
+}
+
+/* ── App layout */
+.page-content {
+	flex: 1;
+	padding: 32px 40px;
+	overflow-y: auto;
+}
+@media (max-width: 768px) {
+	.page-content {
+		padding: 20px 16px 32px;
+	}
+}
+
+/* ── Spin animation (loading) */
+@keyframes spin { to { transform: rotate(360deg); } }
+.spin { animation: spin 0.8s linear infinite; }
+
+/* ── Glassmorphism card */
+.glass {
+	background: rgba(14, 28, 54, 0.60);
+	backdrop-filter: blur(20px);
+	-webkit-backdrop-filter: blur(20px);
+	border: 1px solid rgba(255, 255, 255, 0.07);
+	border-radius: 1rem;
+}
+
+/* ── Gradient text */
+.gradient-text {
+	background: linear-gradient(135deg, #60a5fa 0%, #22d3ee 100%);
+	-webkit-background-clip: text;
+	-webkit-text-fill-color: transparent;
+	background-clip: text;
+}
+
+/* ── Primary button */
+.btn-primary {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 0.5rem;
+	padding: 0.65rem 1.5rem;
+	border-radius: 0.625rem;
+	font-weight: 600;
+	font-size: 0.95rem;
+	cursor: pointer;
+	border: none;
+	background: linear-gradient(135deg, #3b82f6, #2563eb);
+	color: #fff;
+	transition: opacity 0.2s, transform 0.15s;
+	box-shadow: 0 4px 15px rgba(59,130,246,0.25);
+}
+.btn-primary:hover { opacity: 0.88; transform: translateY(-1px); }
+.btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+/* ── Ghost button */
+.btn-ghost {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 0.5rem;
+	padding: 0.65rem 1.5rem;
+	border-radius: 0.625rem;
+	font-weight: 600;
+	font-size: 0.95rem;
+	cursor: pointer;
+	background: transparent;
+	border: 1px solid rgba(255,255,255,0.12);
+	color: #cbd5e1;
+	transition: background 0.2s, border-color 0.2s, transform 0.15s;
+}
+.btn-ghost:hover { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.2); transform: translateY(-1px); }
+
+/* ── Form input */
+.input {
+	width: 100%;
+	padding: 0.7rem 1rem;
+	border-radius: 0.625rem;
+	background: rgba(255,255,255,0.04);
+	border: 1px solid rgba(255,255,255,0.09);
+	color: #e2e8f0;
+	font-size: 0.95rem;
+	outline: none;
+	transition: border-color 0.2s, box-shadow 0.2s;
+}
+.input:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.15); }
+.input::placeholder { color: rgba(255,255,255,0.28); }
+
+/* ── Scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(59,130,246,0.35); border-radius: 3px; }

@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: skillgap
+    env: node
+    rootDir: backend
+    buildCommand: npm install && npm --prefix ../frontend install && npm --prefix ../frontend run build
+    startCommand: npm start
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: MONGO_URI
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: JWT_EXPIRES_IN
+        value: 7d
+      - key: CLIENT_ORIGIN
+        sync: false
+      - key: OPENROUTER_API_KEY
+        sync: false

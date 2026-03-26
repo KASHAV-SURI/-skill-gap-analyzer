@@ -1,0 +1,798 @@
+/*
+ * seed.js — run once to populate roles and sample questions in MongoDB.
+ * Usage: node src/seed.js
+ */
+
+require("dotenv").config();
+const mongoose = require("mongoose");
+const Role = require("./models/Role");
+const Question = require("./models/Question");
+
+const ROLES = [
+  // ── Existing 10 roles ──────────────────────────────────────────
+  {
+    name: "Frontend Developer",
+    slug: "frontend-developer",
+    description: "Build modern, responsive UIs with HTML, CSS, JavaScript and React.",
+    icon: "🎨",
+    topics: [
+      { name: "HTML & Semantic Markup", category: "Core" },
+      { name: "CSS & Flexbox/Grid", category: "Core" },
+      { name: "JavaScript Fundamentals", category: "Core" },
+      { name: "React Basics", category: "Framework" },
+      { name: "React Hooks", category: "Framework" },
+      { name: "State Management", category: "Framework" },
+      { name: "REST API Integration", category: "Integration" },
+      { name: "Performance Optimisation", category: "Advanced" },
+      { name: "Accessibility (a11y)", category: "Best Practices" },
+      { name: "Testing (Jest/RTL)", category: "Testing" },
+    ],
+  },
+  {
+    name: "Backend Developer",
+    slug: "backend-developer",
+    description: "Design and build server-side APIs, databases, and business logic.",
+    icon: "⚙️",
+    topics: [
+      { name: "Node.js Fundamentals", category: "Core" },
+      { name: "Express.js", category: "Framework" },
+      { name: "REST API Design", category: "Design" },
+      { name: "Database Design (SQL)", category: "Database" },
+      { name: "MongoDB & Mongoose", category: "Database" },
+      { name: "Authentication & JWT", category: "Security" },
+      { name: "Error Handling", category: "Best Practices" },
+      { name: "Caching (Redis)", category: "Performance" },
+      { name: "Message Queues", category: "Advanced" },
+      { name: "Testing (Jest/Supertest)", category: "Testing" },
+    ],
+  },
+  {
+    name: "MERN Stack Developer",
+    slug: "mern-stack-developer",
+    description: "Full-stack development with MongoDB, Express, React, and Node.",
+    icon: "🔮",
+    topics: [
+      { name: "React & State Management", category: "Frontend" },
+      { name: "Node.js & Express", category: "Backend" },
+      { name: "MongoDB & Mongoose", category: "Database" },
+      { name: "REST API Design", category: "Design" },
+      { name: "JWT Authentication", category: "Security" },
+      { name: "File Uploads", category: "Features" },
+      { name: "Deployment (Vercel/Render)", category: "DevOps" },
+      { name: "Socket.io (Real-time)", category: "Advanced" },
+      { name: "Environment Configuration", category: "Best Practices" },
+      { name: "Testing", category: "Testing" },
+    ],
+  },
+  {
+    name: "Full Stack Developer",
+    slug: "full-stack-developer",
+    description: "End-to-end web development covering both frontend and backend systems.",
+    icon: "🌐",
+    topics: [
+      { name: "Frontend Frameworks", category: "Frontend" },
+      { name: "Backend Frameworks", category: "Backend" },
+      { name: "Database Design", category: "Database" },
+      { name: "API Design (REST/GraphQL)", category: "Design" },
+      { name: "Authentication & Security", category: "Security" },
+      { name: "CI/CD Pipelines", category: "DevOps" },
+      { name: "Cloud Basics", category: "Cloud" },
+      { name: "Containerisation (Docker)", category: "DevOps" },
+      { name: "System Design", category: "Architecture" },
+      { name: "Testing", category: "Testing" },
+    ],
+  },
+  {
+    name: "AI/ML Engineer",
+    slug: "ai-ml-engineer",
+    description: "Build intelligent systems using machine learning and deep learning.",
+    icon: "🤖",
+    topics: [
+      { name: "Python Fundamentals", category: "Core" },
+      { name: "NumPy & Pandas", category: "Data" },
+      { name: "Supervised Learning", category: "ML" },
+      { name: "Unsupervised Learning", category: "ML" },
+      { name: "Deep Learning (Neural Nets)", category: "DL" },
+      { name: "Model Evaluation & Tuning", category: "ML" },
+      { name: "Feature Engineering", category: "ML" },
+      { name: "Scikit-learn", category: "Tools" },
+      { name: "TensorFlow / PyTorch", category: "Frameworks" },
+      { name: "MLOps & Deployment", category: "Advanced" },
+    ],
+  },
+  {
+    name: "Data Scientist",
+    slug: "data-scientist",
+    description: "Extract insights from data using statistics, analysis, and visualisation.",
+    icon: "📊",
+    topics: [
+      { name: "Statistics & Probability", category: "Core" },
+      { name: "Python & R", category: "Core" },
+      { name: "Data Wrangling", category: "Data" },
+      { name: "Exploratory Data Analysis", category: "Analysis" },
+      { name: "Data Visualisation", category: "Visualisation" },
+      { name: "SQL & Databases", category: "Database" },
+      { name: "Machine Learning Basics", category: "ML" },
+      { name: "A/B Testing", category: "Analysis" },
+      { name: "Big Data Tools (Spark)", category: "Advanced" },
+      { name: "Storytelling with Data", category: "Soft Skills" },
+    ],
+  },
+  {
+    name: "DevOps Engineer",
+    slug: "devops-engineer",
+    description: "Automate software delivery and infrastructure management.",
+    icon: "🚀",
+    topics: [
+      { name: "Linux & Shell Scripting", category: "Core" },
+      { name: "Git & Version Control", category: "Core" },
+      { name: "Docker & Containers", category: "Containerisation" },
+      { name: "Kubernetes", category: "Orchestration" },
+      { name: "CI/CD (GitHub Actions / Jenkins)", category: "Automation" },
+      { name: "Infrastructure as Code (Terraform)", category: "IaC" },
+      { name: "Monitoring & Logging", category: "Observability" },
+      { name: "Cloud Platforms (AWS/GCP/Azure)", category: "Cloud" },
+      { name: "Networking Basics", category: "Networking" },
+      { name: "Security & Compliance", category: "Security" },
+    ],
+  },
+  {
+    name: "Cloud Engineer",
+    slug: "cloud-engineer",
+    description: "Design, build, and manage scalable cloud infrastructure.",
+    icon: "☁️",
+    topics: [
+      { name: "AWS Core Services", category: "AWS" },
+      { name: "Azure Fundamentals", category: "Azure" },
+      { name: "GCP Basics", category: "GCP" },
+      { name: "Cloud Networking (VPC)", category: "Networking" },
+      { name: "IAM & Security", category: "Security" },
+      { name: "Serverless Architecture", category: "Architecture" },
+      { name: "Storage & Databases in Cloud", category: "Data" },
+      { name: "Cost Optimisation", category: "FinOps" },
+      { name: "Terraform / CloudFormation", category: "IaC" },
+      { name: "Cloud Migration", category: "Advanced" },
+    ],
+  },
+  {
+    name: "Cybersecurity Analyst",
+    slug: "cybersecurity-analyst",
+    description: "Protect systems and data by identifying and mitigating threats.",
+    icon: "🔐",
+    topics: [
+      { name: "Networking Fundamentals", category: "Core" },
+      { name: "OS Security (Linux/Windows)", category: "Core" },
+      { name: "OWASP Top 10", category: "Web Security" },
+      { name: "Cryptography Basics", category: "Cryptography" },
+      { name: "Vulnerability Assessment", category: "Analysis" },
+      { name: "Incident Response", category: "Operations" },
+      { name: "SIEM & Log Analysis", category: "Monitoring" },
+      { name: "Ethical Hacking Basics", category: "Offensive" },
+      { name: "Compliance (ISO 27001, GDPR)", category: "Governance" },
+      { name: "Cloud Security", category: "Cloud" },
+    ],
+  },
+  {
+    name: "Mobile App Developer",
+    slug: "mobile-app-developer",
+    description: "Build cross-platform and native mobile applications.",
+    icon: "📱",
+    topics: [
+      { name: "React Native Basics", category: "Framework" },
+      { name: "Navigation (React Navigation)", category: "Framework" },
+      { name: "State Management (Redux)", category: "State" },
+      { name: "Native APIs (Camera, GPS)", category: "Native" },
+      { name: "UI Components & Styling", category: "UI" },
+      { name: "App Store Deployment", category: "Deployment" },
+      { name: "Push Notifications", category: "Features" },
+      { name: "Offline Storage (AsyncStorage)", category: "Data" },
+      { name: "Performance & Optimisation", category: "Advanced" },
+      { name: "Testing (Detox / Jest)", category: "Testing" },
+    ],
+  },
+
+  // ── 10 New roles ──────────────────────────────────────────────
+  {
+    name: "UI/UX Designer",
+    slug: "ui-ux-designer",
+    description: "Design intuitive, accessible, and visually compelling user interfaces.",
+    icon: "🎨",
+    topics: [
+      { name: "Wireframing & Prototyping", category: "Design" },
+      { name: "User Research", category: "Research" },
+      { name: "Figma & Design Tools", category: "Tools" },
+      { name: "Design Systems", category: "Systems" },
+      { name: "Accessibility (a11y)", category: "Standards" },
+      { name: "Information Architecture", category: "Structure" },
+      { name: "Usability Testing", category: "Testing" },
+      { name: "Gestalt Principles", category: "Theory" },
+      { name: "Typography & Color Theory", category: "Visual" },
+      { name: "Interaction Design", category: "Advanced" },
+    ],
+  },
+  {
+    name: "Blockchain Developer",
+    slug: "blockchain-developer",
+    description: "Build decentralized applications and smart contracts on blockchain platforms.",
+    icon: "⛓️",
+    topics: [
+      { name: "Blockchain Fundamentals", category: "Core" },
+      { name: "Smart Contracts (Solidity)", category: "Development" },
+      { name: "Ethereum & EVM", category: "Platform" },
+      { name: "DeFi Concepts", category: "Finance" },
+      { name: "NFT Standards (ERC-721)", category: "Standards" },
+      { name: "Web3.js / Ethers.js", category: "Libraries" },
+      { name: "Consensus Mechanisms", category: "Theory" },
+      { name: "Cryptographic Hashing", category: "Security" },
+      { name: "IPFS & Decentralized Storage", category: "Storage" },
+      { name: "Gas Optimization", category: "Advanced" },
+    ],
+  },
+  {
+    name: "Game Developer",
+    slug: "game-developer",
+    description: "Create engaging 2D/3D games using modern game engines and design patterns.",
+    icon: "🎮",
+    topics: [
+      { name: "Game Loop & Architecture", category: "Core" },
+      { name: "Unity / Unreal Engine", category: "Engines" },
+      { name: "Physics Engine", category: "Simulation" },
+      { name: "2D/3D Graphics (Sprites, Meshes)", category: "Graphics" },
+      { name: "Shaders & VFX", category: "Visual" },
+      { name: "Game AI & Pathfinding", category: "AI" },
+      { name: "Multiplayer & Networking", category: "Networking" },
+      { name: "Audio Systems", category: "Audio" },
+      { name: "Optimization (LOD, Culling)", category: "Performance" },
+      { name: "Game Design Patterns (ECS)", category: "Architecture" },
+    ],
+  },
+  {
+    name: "QA / Test Engineer",
+    slug: "qa-test-engineer",
+    description: "Ensure software quality through systematic testing and automation.",
+    icon: "🧪",
+    topics: [
+      { name: "Test Case Design", category: "Core" },
+      { name: "Manual Testing", category: "Testing" },
+      { name: "Test Automation (Selenium/Cypress)", category: "Automation" },
+      { name: "API Testing (Postman)", category: "API" },
+      { name: "Unit & Integration Testing", category: "Testing" },
+      { name: "Performance Testing (JMeter)", category: "Performance" },
+      { name: "Bug Reporting & Tracking", category: "Process" },
+      { name: "CI/CD for Testing", category: "DevOps" },
+      { name: "Test-Driven Development (TDD)", category: "Methodology" },
+      { name: "Security Testing Basics", category: "Security" },
+    ],
+  },
+  {
+    name: "Database Administrator",
+    slug: "database-administrator",
+    description: "Design, manage, and optimize databases for performance and reliability.",
+    icon: "🗄️",
+    topics: [
+      { name: "SQL & Relational Databases", category: "Core" },
+      { name: "Database Normalization", category: "Design" },
+      { name: "Indexing & Query Optimization", category: "Performance" },
+      { name: "ACID Properties", category: "Transactions" },
+      { name: "Stored Procedures & Triggers", category: "Advanced SQL" },
+      { name: "Database Backup & Recovery", category: "Operations" },
+      { name: "Replication & Sharding", category: "Scalability" },
+      { name: "NoSQL Databases", category: "NoSQL" },
+      { name: "Database Security", category: "Security" },
+      { name: "Cloud Databases (RDS, Atlas)", category: "Cloud" },
+    ],
+  },
+  {
+    name: "Site Reliability Engineer",
+    slug: "site-reliability-engineer",
+    description: "Build and maintain highly reliable, scalable production systems.",
+    icon: "🔧",
+    topics: [
+      { name: "SLOs, SLIs & Error Budgets", category: "Reliability" },
+      { name: "Monitoring & Alerting", category: "Observability" },
+      { name: "Incident Management", category: "Operations" },
+      { name: "Distributed Tracing", category: "Observability" },
+      { name: "Linux & Systems Administration", category: "Core" },
+      { name: "Kubernetes & Containers", category: "Infrastructure" },
+      { name: "Capacity Planning", category: "Planning" },
+      { name: "Chaos Engineering", category: "Resilience" },
+      { name: "Automation & Toil Reduction", category: "Efficiency" },
+      { name: "Post-Mortems & RCA", category: "Process" },
+    ],
+  },
+  {
+    name: "Data Engineer",
+    slug: "data-engineer",
+    description: "Build robust data pipelines and infrastructure to power analytics and ML.",
+    icon: "🔢",
+    topics: [
+      { name: "ETL / ELT Pipelines", category: "Core" },
+      { name: "Apache Spark", category: "Processing" },
+      { name: "Apache Kafka", category: "Streaming" },
+      { name: "Data Warehousing (Snowflake/BigQuery)", category: "Storage" },
+      { name: "Data Lakes", category: "Storage" },
+      { name: "SQL & dbt", category: "Transformation" },
+      { name: "Airflow (Workflow Orchestration)", category: "Orchestration" },
+      { name: "Data Modeling", category: "Design" },
+      { name: "Cloud Data Platforms", category: "Cloud" },
+      { name: "Data Quality & Lineage", category: "Governance" },
+    ],
+  },
+  {
+    name: "AR/VR Developer",
+    slug: "ar-vr-developer",
+    description: "Build immersive augmented and virtual reality experiences.",
+    icon: "🥽",
+    topics: [
+      { name: "AR vs VR Fundamentals", category: "Core" },
+      { name: "Unity / Unreal for XR", category: "Engines" },
+      { name: "ARKit / ARCore", category: "Frameworks" },
+      { name: "3D Spatial Computing", category: "3D" },
+      { name: "Hand & Motion Tracking", category: "Input" },
+      { name: "Spatial Audio", category: "Audio" },
+      { name: "Foveated Rendering", category: "Performance" },
+      { name: "6DoF Interaction", category: "Interaction" },
+      { name: "World Anchoring & Persistence", category: "AR" },
+      { name: "VR Comfort & UX", category: "UX" },
+    ],
+  },
+  {
+    name: "Embedded Systems Engineer",
+    slug: "embedded-systems-engineer",
+    description: "Program microcontrollers and build software for hardware-constrained systems.",
+    icon: "🔌",
+    topics: [
+      { name: "C/C++ for Embedded", category: "Core" },
+      { name: "Microcontrollers (Arduino/STM32)", category: "Hardware" },
+      { name: "RTOS Concepts", category: "OS" },
+      { name: "GPIO & Peripheral Interfaces", category: "Hardware" },
+      { name: "SPI / I2C / UART Protocols", category: "Communication" },
+      { name: "Interrupt Handling", category: "Core" },
+      { name: "Memory Management (Flash/RAM)", category: "Memory" },
+      { name: "Watchdog Timers", category: "Reliability" },
+      { name: "DMA & Low-Power Design", category: "Advanced" },
+      { name: "Bootloaders & Firmware Updates", category: "Deployment" },
+    ],
+  },
+  {
+    name: "Technical Product Manager",
+    slug: "technical-product-manager",
+    description: "Drive product strategy and execution by bridging business and engineering teams.",
+    icon: "📋",
+    topics: [
+      { name: "Product Roadmapping", category: "Strategy" },
+      { name: "User Story Writing", category: "Process" },
+      { name: "Agile / Scrum", category: "Methodology" },
+      { name: "OKRs & Metrics", category: "Measurement" },
+      { name: "A/B Testing & Experimentation", category: "Analytics" },
+      { name: "Stakeholder Management", category: "Communication" },
+      { name: "Technical Feasibility Assessment", category: "Technical" },
+      { name: "Prioritization Frameworks", category: "Decision Making" },
+      { name: "Product Analytics", category: "Data" },
+      { name: "Go-to-Market Strategy", category: "Launch" },
+    ],
+  },
+];
+
+// ── Questions — 5 easy + 5 medium + 5 hard per role ──────────────────────────
+const buildQuestions = (roleDoc) => {
+  const q = {
+    // ── FRONTEND DEVELOPER ────────────────────────────────────────
+    "frontend-developer": [
+      { topic: "HTML & Semantic Markup", difficulty: "easy", text: "Which HTML element is used to define navigation links?", options: ["<div>", "<nav>", "<section>", "<footer>"], answer: 1, explanation: "<nav> is the semantic element for navigation links." },
+      { topic: "CSS & Flexbox/Grid", difficulty: "easy", text: "Which CSS property makes a container use Flexbox?", options: ["display: grid", "display: flex", "position: flex", "layout: flex"], answer: 1 },
+      { topic: "HTML & Semantic Markup", difficulty: "easy", text: "Which HTML tag creates a hyperlink?", options: ["<link>", "<a>", "<href>", "<url>"], answer: 1 },
+      { topic: "CSS & Flexbox/Grid", difficulty: "easy", text: "Which CSS property sets the text color?", options: ["font-color", "text-color", "color", "foreground"], answer: 2 },
+      { topic: "JavaScript Fundamentals", difficulty: "easy", text: "What keyword declares a block-scoped variable in modern JS?", options: ["var", "let", "def", "set"], answer: 1 },
+      { topic: "JavaScript Fundamentals", difficulty: "medium", text: "What does `Array.prototype.reduce` return?", options: ["Always an array", "A single accumulated value", "A boolean", "The original array"], answer: 1, explanation: "reduce() accumulates all array values into one output." },
+      { topic: "React Hooks", difficulty: "medium", text: "Which hook should be used to run side effects in a React component?", options: ["useState", "useReducer", "useEffect", "useContext"], answer: 2 },
+      { topic: "JavaScript Fundamentals", difficulty: "medium", text: "What is a closure in JavaScript?", options: ["A CSS layout technique", "A function that retains access to its outer scope", "A React hook", "An HTML element"], answer: 1 },
+      { topic: "CSS & Flexbox/Grid", difficulty: "medium", text: "What does `position: sticky` do?", options: ["Fixes element to viewport always", "Scrolls normally until a threshold then sticks", "Same as position: fixed", "Floats the element"], answer: 1 },
+      { topic: "React Basics", difficulty: "medium", text: "What is prop drilling in React?", options: ["A CSS bug", "Passing props through many intermediate component layers", "A testing method", "A Vite feature"], answer: 1 },
+      { topic: "Performance Optimisation", difficulty: "hard", text: "What does React.memo do?", options: ["Memoises a function result permanently", "Prevents re-render when props haven't changed", "Caches API responses", "Lazily loads a component"], answer: 1, explanation: "React.memo is a HOC that skips re-render if props are shallowly equal." },
+      { topic: "JavaScript Fundamentals", difficulty: "hard", text: "What is the purpose of the virtual DOM in React?", options: ["Replaces the real DOM entirely", "Enables efficient diffing before applying real DOM updates", "Handles CSS animations", "Manages API calls"], answer: 1 },
+      { topic: "JavaScript Fundamentals", difficulty: "hard", text: "What is event delegation in JavaScript?", options: ["Attaching listeners to every child element", "Attaching one listener to a parent to handle child events via bubbling", "Removing event listeners", "Creating custom events"], answer: 1 },
+      { topic: "Performance Optimisation", difficulty: "hard", text: "What is code splitting used for in React?", options: ["Splitting CSS into modules", "Loading JS bundles on demand to reduce initial load size", "Splitting component state", "Dividing API calls"], answer: 1 },
+      { topic: "Testing (Jest/RTL)", difficulty: "hard", text: "What does `render` from React Testing Library return?", options: ["A DOM node only", "Query utilities and the container to test component output", "A Jest spy", "A snapshot file"], answer: 1 },
+    ],
+
+    // ── BACKEND DEVELOPER ────────────────────────────────────────
+    "backend-developer": [
+      { topic: "Node.js Fundamentals", difficulty: "easy", text: "Which core Node.js module provides an HTTP server?", options: ["fs", "path", "http", "net"], answer: 2 },
+      { topic: "REST API Design", difficulty: "easy", text: "Which HTTP status code means a resource was successfully created?", options: ["200", "201", "204", "301"], answer: 1 },
+      { topic: "Node.js Fundamentals", difficulty: "easy", text: "What does npm stand for?", options: ["Node Package Manager", "Node Project Manager", "New Package Manager", "Node Process Module"], answer: 0 },
+      { topic: "REST API Design", difficulty: "easy", text: "Which HTTP method partially updates a resource?", options: ["PUT", "POST", "PATCH", "DELETE"], answer: 2 },
+      { topic: "Express.js", difficulty: "easy", text: "What is Express.js?", options: ["A database", "A frontend framework", "A minimal Node.js web framework", "A testing library"], answer: 2 },
+      { topic: "Authentication & JWT", difficulty: "medium", text: "Where is a JWT's payload stored?", options: ["Encrypted inside the signature", "Base64-encoded in the second segment", "Stored server-side in a session", "In an HTTP-only cookie only"], answer: 1 },
+      { topic: "MongoDB & Mongoose", difficulty: "medium", text: "Which Mongoose method finds a document by its _id?", options: ["Model.find()", "Model.findOne()", "Model.findById()", "Model.get()"], answer: 2 },
+      { topic: "Express.js", difficulty: "medium", text: "What is middleware in Express.js?", options: ["A database layer", "A function that processes the request/response pipeline", "A frontend component", "A testing utility"], answer: 1 },
+      { topic: "Database Design (SQL)", difficulty: "medium", text: "What is database connection pooling?", options: ["Creating a new connection for every query", "Reusing a pool of pre-established connections for efficiency", "Encrypting database connections", "Caching query results"], answer: 1 },
+      { topic: "Authentication & JWT", difficulty: "medium", text: "What does `async/await` simplify in Node.js?", options: ["Promise chains / callback hell", "File system operations only", "Database connections only", "HTTP requests only"], answer: 0 },
+      { topic: "Caching (Redis)", difficulty: "hard", text: "Which Redis eviction policy removes the least recently used keys?", options: ["allkeys-lfu", "volatile-lru", "allkeys-lru", "noeviction"], answer: 2 },
+      { topic: "Database Design (SQL)", difficulty: "hard", text: "What is the N+1 query problem?", options: ["A pagination issue", "Executing one query then N additional queries for each result", "A network timeout", "A cache miss"], answer: 1 },
+      { topic: "Database Design (SQL)", difficulty: "hard", text: "What is the CAP theorem?", options: ["A CSS layout rule", "A distributed-systems theorem: only 2 of Consistency/Availability/Partition-tolerance are guaranteed", "A REST principle", "A security standard"], answer: 1 },
+      { topic: "Message Queues", difficulty: "hard", text: "What is the main purpose of a message queue like RabbitMQ?", options: ["Storing user sessions", "Decoupling services via asynchronous message passing", "Caching API responses", "Managing database transactions"], answer: 1 },
+      { topic: "Testing (Jest/Supertest)", difficulty: "hard", text: "What does database sharding mean?", options: ["Backing up data regularly", "Horizontally partitioning data across multiple database instances", "Encrypting data at rest", "Compressing database tables"], answer: 1 },
+    ],
+
+    // ── MERN STACK DEVELOPER ─────────────────────────────────────
+    "mern-stack-developer": [
+      { topic: "MongoDB & Mongoose", difficulty: "easy", text: "What does MERN stand for?", options: ["MySQL Express React Node", "MongoDB Express React Node", "MariaDB Ember React Next", "MongoDB Ember React Node"], answer: 1 },
+      { topic: "React & State Management", difficulty: "easy", text: "What is React used for in the MERN stack?", options: ["Server-side routing", "Building user interfaces", "Database operations", "API design"], answer: 1 },
+      { topic: "MongoDB & Mongoose", difficulty: "easy", text: "Which database is the M in MERN?", options: ["MySQL", "MariaDB", "MongoDB", "Microsoft SQL"], answer: 2 },
+      { topic: "Node.js & Express", difficulty: "easy", text: "What does Node.js enable for JavaScript?", options: ["Running JS in the browser only", "Running JavaScript on the server", "Styling HTML pages", "Managing databases directly"], answer: 1 },
+      { topic: "JWT Authentication", difficulty: "easy", text: "What does JWT stand for?", options: ["JavaScript Web Token", "JSON Web Token", "Java Web Type", "JSON Write Token"], answer: 1 },
+      { topic: "React & State Management", difficulty: "medium", text: "What is JSX in React?", options: ["A new programming language", "A syntax extension that allows HTML-like code in JavaScript", "A testing framework", "A state management library"], answer: 1 },
+      { topic: "MongoDB & Mongoose", difficulty: "medium", text: "What is Mongoose in MERN?", options: ["A frontend library", "An ODM (Object Document Mapper) for MongoDB", "A REST client", "A testing tool"], answer: 1 },
+      { topic: "React & State Management", difficulty: "medium", text: "What does the useState hook return?", options: ["Only the current state value", "A [state, setter] pair", "An object with all state", "undefined initially"], answer: 1 },
+      { topic: "Node.js & Express", difficulty: "medium", text: "How does React Router handle navigation?", options: ["Full page reloads", "Client-side routing without page reload", "Server redirects only", "Hash links only"], answer: 1 },
+      { topic: "JWT Authentication", difficulty: "medium", text: "What is the Context API in React used for?", options: ["Local component state only", "Sharing state across components without prop drilling", "Handling async operations", "Managing routing"], answer: 1 },
+      { topic: "REST API Design", difficulty: "hard", text: "What is server-side rendering (SSR) vs client-side rendering (CSR)?", options: ["No practical difference", "SSR renders on server for faster initial load and SEO; CSR renders in browser", "CSR is always faster and better", "SSR requires more client resources"], answer: 1 },
+      { topic: "MongoDB & Mongoose", difficulty: "hard", text: "What is a MongoDB aggregation pipeline?", options: ["A simple CRUD operation", "A series of data-processing stages that transform documents", "An index management tool", "Schema validation only"], answer: 1 },
+      { topic: "Deployment (Vercel/Render)", difficulty: "hard", text: "What is the purpose of environment variables in MERN?", options: ["Store UI color themes", "Keep sensitive config (API keys, DB URIs) out of source code", "Store component state", "Cache API responses"], answer: 1 },
+      { topic: "Socket.io (Real-time)", difficulty: "hard", text: "What is Socket.io used for in a MERN app?", options: ["Database queries", "Real-time bidirectional event-based communication", "Authentication only", "File uploads"], answer: 1 },
+      { topic: "Testing", difficulty: "hard", text: "What is code splitting in React and why is it useful?", options: ["Dividing CSS files", "Lazy-loading JS bundles to reduce initial bundle size and improve performance", "Splitting component state", "Separating API calls from UI logic"], answer: 1 },
+    ],
+
+    // ── FULL STACK DEVELOPER ──────────────────────────────────────
+    "full-stack-developer": [
+      { topic: "Frontend Frameworks", difficulty: "easy", text: "What is a REST API?", options: ["A relational database", "An architectural style for client-server communication over HTTP", "A CSS framework", "A JavaScript library"], answer: 1 },
+      { topic: "Backend Frameworks", difficulty: "easy", text: "What does HTTP stand for?", options: ["HyperText Transfer Protocol", "High Traffic Transfer Protocol", "HyperText Template Protocol", "Host Transfer Protocol"], answer: 0 },
+      { topic: "Database Design", difficulty: "easy", text: "What is a database?", options: ["A programming language", "An organized, structured collection of data", "A web server", "A deployment tool"], answer: 1 },
+      { topic: "Frontend Frameworks", difficulty: "easy", text: "Which language runs natively in browsers?", options: ["Python", "Java", "JavaScript", "Ruby"], answer: 2 },
+      { topic: "API Design (REST/GraphQL)", difficulty: "easy", text: "What is version control?", options: ["Database management", "Tracking code changes over time and enabling collaboration", "Server configuration", "A CSS methodology"], answer: 1 },
+      { topic: "API Design (REST/GraphQL)", difficulty: "medium", text: "What is MVC architecture?", options: ["A CSS framework", "Model-View-Controller — a pattern separating data, UI, and logic", "A database type", "A testing methodology"], answer: 1 },
+      { topic: "Database Design", difficulty: "medium", text: "What is the key difference between SQL and NoSQL?", options: ["No difference in use cases", "SQL uses relational tables with fixed schema; NoSQL uses flexible document/key-value structures", "SQL is always newer", "NoSQL always uses tables"], answer: 1 },
+      { topic: "Cloud Basics", difficulty: "medium", text: "What is a CDN?", options: ["Code Delivery Network", "Content Delivery Network that serves assets from edge nodes close to users", "Central Data Node", "Configuration Deployment Network"], answer: 1 },
+      { topic: "API Design (REST/GraphQL)", difficulty: "medium", text: "What is an ORM?", options: ["Output Rendering Module", "Object-Relational Mapper that maps code objects to database tables", "Old REST Model", "Open Routing Mechanism"], answer: 1 },
+      { topic: "Authentication & Security", difficulty: "medium", text: "What is a WebSocket?", options: ["A one-way HTTP extension", "A persistent, bidirectional communication protocol between client and server", "A styling protocol", "A database protocol"], answer: 1 },
+      { topic: "System Design", difficulty: "hard", text: "What is horizontal vs vertical scaling?", options: ["They are the same thing", "Horizontal adds more servers; vertical adds more resources to an existing server", "Horizontal means more RAM only", "Vertical means more servers"], answer: 1 },
+      { topic: "System Design", difficulty: "hard", text: "What is microservices architecture?", options: ["A monolith with small functions", "Independent services that communicate via APIs and can be deployed separately", "A frontend design pattern", "A database design approach"], answer: 1 },
+      { topic: "API Design (REST/GraphQL)", difficulty: "hard", text: "How does GraphQL differ from REST?", options: ["They are identical", "GraphQL lets clients request exactly the fields they need in a single query", "GraphQL is older and less flexible", "REST is always more efficient"], answer: 1 },
+      { topic: "Database Design", difficulty: "hard", text: "What is database normalization?", options: ["Making tables larger for performance", "Organizing data into normal forms to reduce redundancy and improve integrity", "Encrypting data at rest", "Backing up data regularly"], answer: 1 },
+      { topic: "Containerisation (Docker)", difficulty: "hard", text: "What problem does Docker primarily solve?", options: ["Slow network speeds", "Environment inconsistency — 'it works on my machine' — by packaging apps with their dependencies", "Database performance", "Frontend rendering"], answer: 1 },
+    ],
+
+    // ── AI/ML ENGINEER ────────────────────────────────────────────
+    "ai-ml-engineer": [
+      { topic: "Python Fundamentals", difficulty: "easy", text: "What does ML stand for?", options: ["Machine Language", "Machine Learning", "Mapped Logic", "Model Learning"], answer: 1 },
+      { topic: "NumPy & Pandas", difficulty: "easy", text: "Which Python library is primarily used for data manipulation?", options: ["NumPy", "Pandas", "Matplotlib", "TensorFlow"], answer: 1 },
+      { topic: "Supervised Learning", difficulty: "easy", text: "What is supervised learning?", options: ["Learning without any labels", "Learning from labeled training data to make predictions", "Finding hidden patterns in data", "Reinforcement-based learning"], answer: 1 },
+      { topic: "Deep Learning (Neural Nets)", difficulty: "easy", text: "What is a neural network inspired by?", options: ["Computer hardware architecture", "The structure and function of the human brain", "Statistical decision trees", "Linear algebra only"], answer: 1 },
+      { topic: "Python Fundamentals", difficulty: "easy", text: "Which language is most widely used for ML?", options: ["Java only", "C++ only", "Python", "R only"], answer: 2 },
+      { topic: "Model Evaluation & Tuning", difficulty: "medium", text: "What is overfitting in ML?", options: ["Model performs well on unseen data", "Model performs well on training data but poorly on new/unseen data", "Equal performance on all datasets", "A model that runs too slowly"], answer: 1 },
+      { topic: "Supervised Learning", difficulty: "medium", text: "What is the purpose of a train/test split?", options: ["Speed optimization", "Evaluating model performance on data it has not seen during training", "Reducing training data size", "Saving GPU memory"], answer: 1 },
+      { topic: "Supervised Learning", difficulty: "medium", text: "What is gradient descent?", options: ["A type of neural network layer", "An optimization algorithm that minimizes the loss function iteratively", "A data preprocessing step", "A regularization technique"], answer: 1 },
+      { topic: "Scikit-learn", difficulty: "medium", text: "What does scikit-learn primarily provide?", options: ["Deep learning tools only", "Classical ML algorithms, preprocessing tools, and evaluation utilities", "Data visualization only", "NLP-specific models"], answer: 1 },
+      { topic: "Model Evaluation & Tuning", difficulty: "medium", text: "What is a confusion matrix used for?", options: ["Visualizing data distributions", "Evaluating classification model performance by comparing predicted vs actual labels", "Training neural networks", "Feature selection"], answer: 1 },
+      { topic: "Deep Learning (Neural Nets)", difficulty: "hard", text: "What is the vanishing gradient problem?", options: ["A GPU memory issue", "Gradients become too small in deep networks, preventing earlier layers from learning", "An overfitting problem", "A data augmentation issue"], answer: 1 },
+      { topic: "Deep Learning (Neural Nets)", difficulty: "hard", text: "What is dropout in neural networks?", options: ["Permanently removing neurons", "Randomly disabling neurons during training to prevent overfitting", "A loss function technique", "A type of activation layer"], answer: 1 },
+      { topic: "MLOps & Deployment", difficulty: "hard", text: "What is transfer learning?", options: ["Moving data between servers", "Reusing weights from a pretrained model as a starting point for a new task", "A data pipeline technique", "A hyperparameter search method"], answer: 1 },
+      { topic: "TensorFlow / PyTorch", difficulty: "hard", text: "What is the attention mechanism in transformers?", options: ["A data selection method", "A mechanism that weighs the importance of different input tokens when producing each output", "A loss function", "A type of regularization"], answer: 1 },
+      { topic: "Feature Engineering", difficulty: "hard", text: "What is the difference between L1 and L2 regularization?", options: ["No difference", "L1 (Lasso) promotes sparsity by zeroing weights; L2 (Ridge) penalizes large weights uniformly", "L1 is only for regression", "L2 is only for classification"], answer: 1 },
+    ],
+
+    // ── DATA SCIENTIST ────────────────────────────────────────────
+    "data-scientist": [
+      { topic: "Statistics & Probability", difficulty: "easy", text: "What is the mean of a dataset?", options: ["The most frequent value", "The middle value when sorted", "The arithmetic average of all values", "The range of values"], answer: 2 },
+      { topic: "SQL & Databases", difficulty: "easy", text: "What does SQL SELECT do?", options: ["Inserts rows", "Retrieves data from a database table", "Deletes records", "Creates tables"], answer: 1 },
+      { topic: "Exploratory Data Analysis", difficulty: "easy", text: "What is a histogram?", options: ["A pie chart", "A bar chart showing the frequency distribution of a variable", "A line chart over time", "A scatter plot"], answer: 1 },
+      { topic: "Data Wrangling", difficulty: "easy", text: "What is data cleaning?", options: ["Encrypting data", "Identifying and fixing incorrect, missing, or inconsistent data", "Storing data in a warehouse", "Creating visualizations"], answer: 1 },
+      { topic: "Python & R", difficulty: "easy", text: "What does CSV stand for?", options: ["Comma-Separated Values", "Computer Stored Variables", "Calculated Statistical Values", "Common Syntax Variables"], answer: 0 },
+      { topic: "Statistics & Probability", difficulty: "medium", text: "What is correlation?", options: ["Always implies causation", "A statistical measure of the relationship between two variables", "The average of a dataset", "A type of probability distribution"], answer: 1 },
+      { topic: "A/B Testing", difficulty: "medium", text: "What is A/B testing?", options: ["A software unit testing method", "Comparing two variants to determine which performs better on a key metric", "A database query optimization", "A machine learning technique"], answer: 1 },
+      { topic: "Statistics & Probability", difficulty: "medium", text: "What is a p-value in hypothesis testing?", options: ["The sample size required", "The probability of observing results at least as extreme if the null hypothesis is true", "The correlation coefficient", "The standard deviation"], answer: 1 },
+      { topic: "Exploratory Data Analysis", difficulty: "medium", text: "What is feature engineering?", options: ["Building ML models from scratch", "Creating or transforming input variables to improve model performance", "Cleaning missing data only", "Visualizing data distributions"], answer: 1 },
+      { topic: "Machine Learning Basics", difficulty: "medium", text: "What is the key difference between supervised and unsupervised learning?", options: ["No difference", "Supervised uses labeled data; unsupervised finds patterns in unlabeled data", "Supervised learning is always faster", "Unsupervised always needs more data"], answer: 1 },
+      { topic: "Big Data Tools (Spark)", difficulty: "hard", text: "What is the curse of dimensionality?", options: ["Too many rows in a dataset", "Performance and sparsity issues that arise as the number of features grows very large", "Low sample size only", "A neural network-only problem"], answer: 1 },
+      { topic: "Exploratory Data Analysis", difficulty: "hard", text: "What is Principal Component Analysis (PCA)?", options: ["A clustering algorithm", "A dimensionality reduction technique that projects data onto principal variance directions", "A classification method", "A data cleaning technique"], answer: 1 },
+      { topic: "Statistics & Probability", difficulty: "hard", text: "What does AUC-ROC measure?", options: ["Data distribution shape", "A classifier's ability to distinguish between classes across all thresholds", "Regression model accuracy", "Clustering quality"], answer: 1 },
+      { topic: "Machine Learning Basics", difficulty: "hard", text: "What is multicollinearity in regression?", options: ["Missing data in a column", "High correlation between independent variables causing unstable coefficient estimates", "An underfitting problem", "Presence of outliers"], answer: 1 },
+      { topic: "Storytelling with Data", difficulty: "hard", text: "What is Bayesian inference?", options: ["Frequentist statistics only", "A probabilistic framework for updating beliefs as new evidence/data arrives", "A visualization technique", "A SQL aggregation method"], answer: 1 },
+    ],
+
+    // ── DEVOPS ENGINEER ───────────────────────────────────────────
+    "devops-engineer": [
+      { topic: "CI/CD (GitHub Actions / Jenkins)", difficulty: "easy", text: "What does CI/CD stand for?", options: ["Code Integration/Code Deployment", "Continuous Integration/Continuous Delivery (or Deployment)", "Code Inspection/Code Delivery", "Continuous Implementation/Continuous Development"], answer: 1 },
+      { topic: "Docker & Containers", difficulty: "easy", text: "What is Docker primarily used for?", options: ["Version control", "Packaging applications and their dependencies into portable containers", "Database management", "Frontend development"], answer: 1 },
+      { topic: "Git & Version Control", difficulty: "easy", text: "What does `git push` do?", options: ["Downloads changes from remote", "Uploads local commits to the remote repository", "Creates a new branch", "Merges branches together"], answer: 1 },
+      { topic: "Docker & Containers", difficulty: "easy", text: "What is a Dockerfile?", options: ["A network configuration file", "A script with instructions for building a Docker image", "A CI/CD pipeline config", "A database schema"], answer: 1 },
+      { topic: "Linux & Shell Scripting", difficulty: "easy", text: "Which command lists files in a directory on Linux?", options: ["dir", "ls", "show", "list"], answer: 1 },
+      { topic: "Kubernetes", difficulty: "medium", text: "What is Kubernetes used for?", options: ["Building container images", "Orchestrating and managing containers across a cluster at scale", "Writing infrastructure code", "Load balancing only"], answer: 1 },
+      { topic: "Infrastructure as Code (Terraform)", difficulty: "medium", text: "What is Infrastructure as Code (IaC)?", options: ["Manual server setup guides", "Managing infrastructure via declarative code files for repeatability", "A monitoring tool", "A deployment strategy only"], answer: 1 },
+      { topic: "CI/CD (GitHub Actions / Jenkins)", difficulty: "medium", text: "What is a blue-green deployment?", options: ["A Git branching color scheme", "Switching traffic between two identical environments to reduce downtime during releases", "A monitoring technique", "A container strategy"], answer: 1 },
+      { topic: "Infrastructure as Code (Terraform)", difficulty: "medium", text: "What is Terraform?", options: ["A containerization tool", "An IaC tool for provisioning and managing cloud infrastructure", "A CI/CD platform", "A monitoring service"], answer: 1 },
+      { topic: "Monitoring & Logging", difficulty: "medium", text: "What is a load balancer?", options: ["A storage system", "A component that distributes incoming traffic across multiple servers", "A CI/CD tool", "A container runtime"], answer: 1 },
+      { topic: "Kubernetes", difficulty: "hard", text: "What is a service mesh in Kubernetes?", options: ["A container registry", "An infrastructure layer handling service-to-service communication, security, and observability", "A monitoring dashboard", "A load balancing algorithm only"], answer: 1 },
+      { topic: "CI/CD (GitHub Actions / Jenkins)", difficulty: "hard", text: "What is GitOps?", options: ["A Git hosting product", "Using Git as the single source of truth for declarative infrastructure and application configuration", "A branching model", "A CI/CD platform brand"], answer: 1 },
+      { topic: "Kubernetes", difficulty: "hard", text: "What is Helm in the Kubernetes ecosystem?", options: ["A monitoring tool", "A package manager for Kubernetes applications using reusable charts", "A container runtime", "A service mesh"], answer: 1 },
+      { topic: "Security & Compliance", difficulty: "hard", text: "What is chaos engineering?", options: ["Introducing random bugs intentionally", "Deliberately injecting failures into a system to discover weaknesses and improve resilience", "A unit testing methodology", "A deployment strategy"], answer: 1 },
+      { topic: "CI/CD (GitHub Actions / Jenkins)", difficulty: "hard", text: "What is the difference between RTO and RPO in disaster recovery?", options: ["They mean the same thing", "RTO is the max acceptable recovery time; RPO is the max acceptable data loss window", "RTO is the data backup interval", "RPO is the system restart time"], answer: 1 },
+    ],
+
+    // ── CLOUD ENGINEER ────────────────────────────────────────────
+    "cloud-engineer": [
+      { topic: "AWS Core Services", difficulty: "easy", text: "What does AWS stand for?", options: ["Advanced Web Services", "Amazon Web Services", "Automated Web Systems", "Azure Web Services"], answer: 1 },
+      { topic: "AWS Core Services", difficulty: "easy", text: "What is Amazon S3?", options: ["Simple Server Service", "Simple Storage Service for object storage", "Secure Socket Service", "Standard Sync Service"], answer: 1 },
+      { topic: "Cloud Networking (VPC)", difficulty: "easy", text: "What is a virtual machine (VM)?", options: ["A physical computer", "A software emulation of a physical computer running on shared hardware", "A type of container", "A networking protocol"], answer: 1 },
+      { topic: "AWS Core Services", difficulty: "easy", text: "What is auto-scaling in cloud?", options: ["Manual server management", "Automatically adjusting the number of compute resources based on demand", "Fixed server allocation", "A security feature"], answer: 1 },
+      { topic: "Azure Fundamentals", difficulty: "easy", text: "What is cloud computing?", options: ["Using only local computers", "Delivering computing services (servers, storage, databases) over the internet on demand", "A type of database", "A programming language"], answer: 1 },
+      { topic: "Cloud Networking (VPC)", difficulty: "medium", text: "What is a VPC in cloud computing?", options: ["A virtual processor unit", "An isolated private network within a cloud provider's infrastructure", "A storage service", "A serverless function"], answer: 1 },
+      { topic: "IAM & Security", difficulty: "medium", text: "What is IAM in AWS?", options: ["Image and Asset Management", "Identity and Access Management for controlling permissions to AWS resources", "Internet Access Management", "Infrastructure Automation Module"], answer: 1 },
+      { topic: "AWS Core Services", difficulty: "medium", text: "What are Availability Zones (AZs)?", options: ["Time zones used for billing", "Isolated data center locations within a region providing redundancy", "Billing groupings", "Different VM sizes"], answer: 1 },
+      { topic: "Serverless Architecture", difficulty: "medium", text: "What is serverless computing?", options: ["Servers don't physically exist", "Running code without provisioning or managing servers; the cloud handles infrastructure", "Using only local servers", "A type of VM deployment"], answer: 1 },
+      { topic: "Storage & Databases in Cloud", difficulty: "medium", text: "What is the difference between object storage and block storage?", options: ["No practical difference", "Object storage suits unstructured data with metadata; block storage provides raw disk partitions for databases/boot volumes", "Object storage is only for images", "Block storage is only for analytics"], answer: 1 },
+      { topic: "IAM & Security", difficulty: "hard", text: "What is the shared responsibility model in cloud?", options: ["The cloud provider handles all security", "The cloud secures the infrastructure; the customer secures what they run on it", "The customer handles all security", "A cost-sharing billing model"], answer: 1 },
+      { topic: "Cloud Migration", difficulty: "hard", text: "What is eventual consistency in distributed cloud storage?", options: ["Data is always immediately consistent across all nodes", "Replicas may temporarily diverge but will converge to the same value over time", "A security model for access control", "A billing concept"], answer: 1 },
+      { topic: "Cost Optimisation", difficulty: "hard", text: "What is FinOps?", options: ["A financial operating system", "The practice of managing and optimizing cloud costs collaboratively across engineering and finance", "A specific cloud security framework", "A deployment methodology"], answer: 1 },
+      { topic: "Cloud Migration", difficulty: "hard", text: "What is multi-region deployment?", options: ["Using multiple AZs in one region", "Deploying across multiple geographic regions for high availability and disaster recovery", "Using multiple cloud providers only", "Multiple VPCs in one region"], answer: 1 },
+      { topic: "Serverless Architecture", difficulty: "hard", text: "What is the difference between IaaS, PaaS, and SaaS?", options: ["They are all the same model", "IaaS provides raw infrastructure; PaaS provides a managed platform; SaaS provides ready-to-use software", "SaaS provides only hardware", "IaaS includes pre-built software"], answer: 1 },
+    ],
+
+    // ── CYBERSECURITY ANALYST ─────────────────────────────────────
+    "cybersecurity-analyst": [
+      { topic: "Networking Fundamentals", difficulty: "easy", text: "What does HTTPS ensure?", options: ["Faster page loading always", "Encrypted communication between browser and server", "Larger file transfer limits", "SEO ranking improvement only"], answer: 1 },
+      { topic: "OS Security (Linux/Windows)", difficulty: "easy", text: "What is a firewall?", options: ["A type of malware", "A network security system that monitors and filters incoming/outgoing traffic", "A backup system", "A password manager"], answer: 1 },
+      { topic: "OS Security (Linux/Windows)", difficulty: "easy", text: "What is phishing?", options: ["A network scanning protocol", "A deceptive attempt to steal credentials by impersonating a trusted entity", "A type of firewall rule", "A backup method"], answer: 1 },
+      { topic: "Cryptography Basics", difficulty: "easy", text: "What does encryption do?", options: ["Compresses data for speed", "Converts data into an unreadable format that requires a key to decode", "Speeds up data transfer", "Creates data backups"], answer: 1 },
+      { topic: "OS Security (Linux/Windows)", difficulty: "easy", text: "What is two-factor authentication (2FA)?", options: ["Using two different passwords", "Requiring a second form of verification beyond a password to access an account", "Double encrypting a password", "Having two separate user accounts"], answer: 1 },
+      { topic: "OWASP Top 10", difficulty: "medium", text: "What is SQL injection?", options: ["A database optimization technique", "Inserting malicious SQL code into input fields to manipulate or expose database data", "A type of database encryption", "A backup strategy"], answer: 1 },
+      { topic: "OWASP Top 10", difficulty: "medium", text: "What is Cross-Site Scripting (XSS)?", options: ["A network protocol", "Injecting malicious scripts into web pages that execute in other users' browsers", "A type of firewall rule", "An SSL/TLS method"], answer: 1 },
+      { topic: "OWASP Top 10", difficulty: "medium", text: "What does the OWASP Top 10 represent?", options: ["Top 10 security testing tools", "The 10 most critical web application security risk categories", "10 recommended programming languages", "10 best cloud platforms"], answer: 1 },
+      { topic: "Vulnerability Assessment", difficulty: "medium", text: "What is a man-in-the-middle (MITM) attack?", options: ["A direct server hack", "Intercepting and potentially altering communication between two parties without their knowledge", "A phishing email variant", "A SQL injection type"], answer: 1 },
+      { topic: "OS Security (Linux/Windows)", difficulty: "medium", text: "What is the principle of least privilege?", options: ["Give all users administrator access by default", "Grant users and processes only the minimum permissions needed to perform their job", "A firewall configuration rule", "A password complexity policy"], answer: 1 },
+      { topic: "Vulnerability Assessment", difficulty: "hard", text: "What is a zero-day vulnerability?", options: ["A known bug with zero severity", "A security flaw that is exploited before the vendor is aware of or has patched it", "A DNS-level vulnerability", "A type of DDoS attack"], answer: 1 },
+      { topic: "Cryptography Basics", difficulty: "hard", text: "What is asymmetric encryption?", options: ["Using the same key for both encrypting and decrypting", "Using a public key to encrypt and a private key to decrypt (or vice versa)", "Only used in HTTPS", "A hashing algorithm type"], answer: 1 },
+      { topic: "SIEM & Log Analysis", difficulty: "hard", text: "What is a SIEM system?", options: ["A hardware firewall type", "A platform that aggregates security logs and events for real-time analysis and alerting", "A password management system", "An intrusion prevention device"], answer: 1 },
+      { topic: "Incident Response", difficulty: "hard", text: "What is lateral movement in a cyberattack?", options: ["Moving files between servers", "An attacker expanding their access horizontally across systems after an initial breach", "A network monitoring metric", "A firewall bypass technique"], answer: 1 },
+      { topic: "Vulnerability Assessment", difficulty: "hard", text: "What is CVE?", options: ["Common Vulnerability Exploit", "Common Vulnerabilities and Exposures — a standardized public list of known security vulnerabilities", "A cloud security framework", "A penetration testing methodology"], answer: 1 },
+    ],
+
+    // ── MOBILE APP DEVELOPER ──────────────────────────────────────
+    "mobile-app-developer": [
+      { topic: "React Native Basics", difficulty: "easy", text: "What is React Native?", options: ["A web-only framework", "A JavaScript framework for building native mobile apps for iOS and Android", "A database library", "A CSS utility"], answer: 1 },
+      { topic: "React Native Basics", difficulty: "easy", text: "What file extension is used for Android app packages?", options: [".ipa", ".exe", ".apk", ".dmg"], answer: 2 },
+      { topic: "App Store Deployment", difficulty: "easy", text: "Where do iOS applications get distributed to end users?", options: ["Google Play Store", "Apple App Store", "Microsoft Store", "Samsung Galaxy Store"], answer: 1 },
+      { topic: "React Native Basics", difficulty: "easy", text: "Which language does React Native use primarily?", options: ["Swift", "Kotlin", "JavaScript", "Dart"], answer: 2 },
+      { topic: "State Management (Redux)", difficulty: "easy", text: "What is the purpose of state management in mobile apps?", options: ["Handling network requests only", "Managing and sharing data consistently across components and screens", "Styling components", "Navigating between screens"], answer: 1 },
+      { topic: "Navigation (React Navigation)", difficulty: "medium", text: "What does React Navigation handle in a React Native app?", options: ["State management", "Routing and transitions between screens", "API requests", "Styling components"], answer: 1 },
+      { topic: "Offline Storage (AsyncStorage)", difficulty: "medium", text: "What is AsyncStorage in React Native?", options: ["In-memory temporary storage", "A persistent, asynchronous key-value storage system for mobile apps", "A cloud sync library", "A global state manager"], answer: 1 },
+      { topic: "React Native Basics", difficulty: "medium", text: "What is FlatList used for in React Native?", options: ["Rendering a single component", "Efficiently rendering long, scrollable lists with lazy loading", "Making network requests", "Handling navigation"], answer: 1 },
+      { topic: "Push Notifications", difficulty: "medium", text: "What is a push notification?", options: ["An in-app dialog only", "A message sent from a server to a mobile device, even when the app is not open", "An email notification", "An SMS message"], answer: 1 },
+      { topic: "React Native Basics", difficulty: "medium", text: "What is the main difference between React Native and Flutter?", options: ["They are identical", "React Native uses JavaScript/React; Flutter uses Dart and has its own rendering engine", "React Native is always faster", "Flutter does not support iOS"], answer: 1 },
+      { topic: "Performance & Optimisation", difficulty: "hard", text: "What is Hermes in React Native?", options: ["A state management library", "A lightweight JavaScript engine optimized for React Native that improves startup time and memory usage", "A navigation library", "A styling system"], answer: 1 },
+      { topic: "React Native Basics", difficulty: "hard", text: "What was the role of the Bridge in the old React Native architecture?", options: ["A navigation component", "The asynchronous serialized communication layer between JavaScript and native threads", "A network caching layer", "A testing utility"], answer: 1 },
+      { topic: "React Native Basics", difficulty: "hard", text: "What is the JSI (JavaScript Interface) in React Native's New Architecture?", options: ["A new UI component library", "A C++ layer enabling synchronous, direct calls between JavaScript and native code without serialization", "A new state management API", "A testing framework"], answer: 1 },
+      { topic: "Testing (Detox / Jest)", difficulty: "hard", text: "What is Detox used for in React Native?", options: ["Making network requests", "End-to-end testing of React Native apps on real devices or simulators", "State management", "Push notification handling"], answer: 1 },
+      { topic: "App Store Deployment", difficulty: "hard", text: "What is OTA (Over-the-Air) update with CodePush?", options: ["Pushing source code to GitHub", "Updating the JavaScript bundle of a React Native app without going through App Store review", "A CI/CD pipeline step", "A device enrollment method"], answer: 1 },
+    ],
+
+    // ── UI/UX DESIGNER ────────────────────────────────────────────
+    "ui-ux-designer": [
+      { topic: "Wireframing & Prototyping", difficulty: "easy", text: "What does UX stand for?", options: ["User Experience", "Unix Extension", "UI Extension", "User Examination"], answer: 0 },
+      { topic: "Wireframing & Prototyping", difficulty: "easy", text: "What is a wireframe?", options: ["A final polished design", "A low-fidelity layout sketch that outlines the structure of a UI", "A coding framework", "A color palette guide"], answer: 1 },
+      { topic: "Figma & Design Tools", difficulty: "easy", text: "Which tool is the industry standard for UI/UX design today?", options: ["MS Paint", "Figma", "Excel", "Notepad"], answer: 1 },
+      { topic: "Wireframing & Prototyping", difficulty: "easy", text: "What is a prototype in UI/UX design?", options: ["The final shipped product", "An interactive mockup simulating user flows before development", "A wireframe tool", "A color palette"], answer: 1 },
+      { topic: "Accessibility (a11y)", difficulty: "easy", text: "What does accessibility (a11y) mean in UI design?", options: ["Making interfaces look beautiful", "Designing so all users, including those with disabilities, can use the product", "Mobile-only design", "Fast loading speeds"], answer: 1 },
+      { topic: "Design Systems", difficulty: "medium", text: "What is a design system?", options: ["A project management tool", "A collection of reusable components, guidelines, and tokens for consistent UI", "A color picker app", "A typography selector"], answer: 1 },
+      { topic: "User Research", difficulty: "medium", text: "What is user research in UX?", options: ["Competitive developer research", "Gathering insights about user needs, behaviors, and pain points to guide design decisions", "A marketing strategy", "A performance benchmark"], answer: 1 },
+      { topic: "Gestalt Principles", difficulty: "medium", text: "What does the Gestalt principle of proximity state?", options: ["Similar-looking elements are grouped together", "Elements placed near each other are perceived as related", "Symmetrical designs are preferred", "Color creates emphasis"], answer: 1 },
+      { topic: "Information Architecture", difficulty: "medium", text: "What is Information Architecture (IA)?", options: ["Backend server design", "Organizing and structuring content for intuitive navigation and findability", "A coding pattern", "A Figma plugin"], answer: 1 },
+      { topic: "Usability Testing", difficulty: "medium", text: "What is a usability test?", options: ["A developer code review", "Observing real users interact with a product to discover pain points and usability issues", "A performance speed test", "An A/B test for metrics"], answer: 1 },
+      { topic: "Interaction Design", difficulty: "hard", text: "What is atomic design methodology?", options: ["A CSS framework name", "A UI design approach building from atoms → molecules → organisms → templates → pages", "A color theory system", "A typography scale method"], answer: 1 },
+      { topic: "User Research", difficulty: "hard", text: "What is cognitive load in UX?", options: ["Server processing load", "The mental effort required for users to understand and interact with a UI", "Page loading time", "Code complexity"], answer: 1 },
+      { topic: "Interaction Design", difficulty: "hard", text: "What is progressive disclosure in UX?", options: ["Displaying all features upfront", "Revealing complexity gradually to avoid overwhelming users at first interaction", "A loading animation technique", "An animation library pattern"], answer: 1 },
+      { topic: "Interaction Design", difficulty: "hard", text: "What is a mental model in UX?", options: ["A design mockup type", "A user's internal understanding of how a system works, which guides their behavior", "A wireframe category", "A component library term"], answer: 1 },
+      { topic: "Usability Testing", difficulty: "hard", text: "What are Nielsen's 10 Usability Heuristics?", options: ["10 color design rules", "10 general principles for evaluating and improving UI design and usability", "10 JavaScript coding rules", "10 database design principles"], answer: 1 },
+    ],
+
+    // ── BLOCKCHAIN DEVELOPER ──────────────────────────────────────
+    "blockchain-developer": [
+      { topic: "Blockchain Fundamentals", difficulty: "easy", text: "What is a blockchain?", options: ["A type of cloud database", "A distributed, immutable, append-only ledger of transactions", "A programming language", "A cloud storage service"], answer: 1 },
+      { topic: "Cryptographic Hashing", difficulty: "easy", text: "What is cryptographic hashing?", options: ["Reversible encryption of data", "A one-way function that produces a fixed-length output from any input", "A blockchain consensus mechanism", "A wallet generation algorithm"], answer: 1 },
+      { topic: "Blockchain Fundamentals", difficulty: "easy", text: "What does decentralized mean in the context of blockchain?", options: ["Controlled by one central company", "No single authority controls the network; control is distributed among participants", "Data is stored on one server", "All data is fully encrypted"], answer: 1 },
+      { topic: "Blockchain Fundamentals", difficulty: "easy", text: "What is a crypto wallet?", options: ["A physical wallet with a chip", "Software that stores private/public keys used to access and transact blockchain assets", "A type of cryptocurrency exchange", "A smart contract"], answer: 1 },
+      { topic: "Blockchain Fundamentals", difficulty: "easy", text: "What is Bitcoin?", options: ["A blockchain developer platform", "The first decentralized peer-to-peer cryptocurrency", "A smart contract language", "A centralized database"], answer: 1 },
+      { topic: "Smart Contracts (Solidity)", difficulty: "medium", text: "What is a smart contract?", options: ["A legal digital document", "Self-executing code deployed on a blockchain that runs automatically when conditions are met", "A type of crypto wallet", "A consensus algorithm"], answer: 1 },
+      { topic: "Ethereum & EVM", difficulty: "medium", text: "What is Ethereum primarily known for beyond being a cryptocurrency?", options: ["Being the fastest blockchain", "Being a programmable blockchain platform that supports smart contracts and DApps", "Being a private blockchain only", "Being a consensus algorithm"], answer: 1 },
+      { topic: "Consensus Mechanisms", difficulty: "medium", text: "What is Proof of Work (PoW)?", options: ["A smart contract type", "A consensus mechanism where nodes compete by solving computationally hard puzzles to add blocks", "A wallet security method", "A token standard"], answer: 1 },
+      { topic: "Ethereum & EVM", difficulty: "medium", text: "What is gas in Ethereum?", options: ["A blockchain token type", "The fee paid (in ETH) to compensate for the computing energy required to execute transactions and contracts", "A consensus mechanism", "A type of crypto wallet"], answer: 1 },
+      { topic: "Smart Contracts (Solidity)", difficulty: "medium", text: "What is a DApp?", options: ["A mobile application", "A Decentralized Application that runs its backend logic on a blockchain via smart contracts", "A type of crypto token", "A consensus mechanism"], answer: 1 },
+      { topic: "Consensus Mechanisms", difficulty: "hard", text: "What is the Byzantine Generals Problem?", options: ["A cryptography attack type", "The challenge of reaching consensus in a distributed system when some participants may be malicious or fail", "A smart contract vulnerability", "A wallet key management issue"], answer: 1 },
+      { topic: "Ethereum & EVM", difficulty: "hard", text: "What is the Ethereum EVM?", options: ["Ethereum Value Machine", "A stack-based virtual machine that executes smart contract bytecode deterministically on every node", "A consensus algorithm", "A token standard definition"], answer: 1 },
+      { topic: "Consensus Mechanisms", difficulty: "hard", text: "What is a 51% attack?", options: ["Hacking 51 specific wallets", "A single entity gaining majority hash/stake power to rewrite or censor the blockchain", "A smart contract re-entrancy exploit", "A wallet seed phrase attack"], answer: 1 },
+      { topic: "Gas Optimization", difficulty: "hard", text: "How does Proof of Stake (PoS) differ from Proof of Work (PoW)?", options: ["They are functionally identical", "PoW uses computational power; PoS uses staked cryptocurrency as the basis for validator selection", "PoS uses more energy", "PoW is faster"], answer: 1 },
+      { topic: "Blockchain Fundamentals", difficulty: "hard", text: "What is blockchain interoperability?", options: ["A blockchain's transaction speed", "The ability of different blockchain networks to communicate and exchange data with each other", "A smart contract security feature", "A token bridging exploit"], answer: 1 },
+    ],
+
+    // ── GAME DEVELOPER ────────────────────────────────────────────
+    "game-developer": [
+      { topic: "Unity / Unreal Engine", difficulty: "easy", text: "What is a game engine?", options: ["A graphics card model", "A software framework that provides tools for building and running games", "A gaming console", "A physics simulator only"], answer: 1 },
+      { topic: "Unity / Unreal Engine", difficulty: "easy", text: "What primary scripting language does Unity use?", options: ["Python", "C#", "Java", "Lua"], answer: 1 },
+      { topic: "2D/3D Graphics (Sprites, Meshes)", difficulty: "easy", text: "What is a sprite in 2D game development?", options: ["A 3D polygon mesh", "A 2D graphical image used to represent a character or object in a game", "A physics constraint", "A game terrain type"], answer: 1 },
+      { topic: "Game Loop & Architecture", difficulty: "easy", text: "What does FPS stand for in gaming?", options: ["First Player Shooter", "Frames Per Second — the number of frames rendered per second", "File Per Save", "Free Play System"], answer: 1 },
+      { topic: "Physics Engine", difficulty: "easy", text: "What is collision detection in games?", options: ["Rendering dynamic shadows", "Detecting when two or more game objects overlap or make contact", "Loading game levels", "Saving game state persistently"], answer: 1 },
+      { topic: "Game Loop & Architecture", difficulty: "medium", text: "What is the game loop?", options: ["The main menu navigation loop", "The core cycle of input → update → render that runs continuously during gameplay", "The level selection system", "The audio management loop"], answer: 1 },
+      { topic: "Physics Engine", difficulty: "medium", text: "What is a physics engine in a game?", options: ["A 3D model renderer", "A system that simulates physical interactions like gravity, friction, and collisions", "A particle effects system", "A sound spatialization engine"], answer: 1 },
+      { topic: "Game AI & Pathfinding", difficulty: "medium", text: "What is pathfinding in game AI?", options: ["Finding bugs in code", "An algorithm (e.g., A*) that allows NPCs to navigate around obstacles to reach a destination", "A texture mapping technique", "A lighting calculation"], answer: 1 },
+      { topic: "Optimization (LOD, Culling)", difficulty: "medium", text: "What is LOD (Level of Detail) in 3D games?", options: ["The game's difficulty system", "Using lower-polygon models for distant objects to improve rendering performance", "A shader parameter", "A physics optimization layer"], answer: 1 },
+      { topic: "Shaders & VFX", difficulty: "medium", text: "What is a shader in game graphics?", options: ["A sound processing module", "A GPU program that computes the color and visual properties of pixels and vertices", "A game physics component", "An NPC behavior script"], answer: 1 },
+      { topic: "Game Design Patterns (ECS)", difficulty: "hard", text: "What is the Entity Component System (ECS) pattern?", options: ["A traditional OOP design pattern", "An architectural pattern that separates entities, reusable data components, and logic systems for better performance", "A rendering pipeline design", "A network synchronization protocol"], answer: 1 },
+      { topic: "Optimization (LOD, Culling)", difficulty: "hard", text: "What is occlusion culling?", options: ["Highlighting foreground objects", "Skipping the rendering of objects that are fully hidden behind other objects to save GPU resources", "An anti-aliasing technique", "A texture compression method"], answer: 1 },
+      { topic: "Multiplayer & Networking", difficulty: "hard", text: "What is deterministic netcode in multiplayer games?", options: ["Server-side prediction only", "Ensuring that the same inputs always produce identical simulation results across all connected clients", "Lag compensation for shooters", "Client-side prediction alone"], answer: 1 },
+      { topic: "Game AI & Pathfinding", difficulty: "hard", text: "What is a Behavior Tree in game AI?", options: ["A data structure for level design", "A hierarchical tree structure for modeling complex, conditional NPC behaviors and decision-making", "A rendering pipeline node", "A physics simulation graph"], answer: 1 },
+      { topic: "Shaders & VFX", difficulty: "hard", text: "What is the main difference between forward rendering and deferred rendering?", options: ["No practical difference for complex scenes", "Forward renders each light-object pair; deferred stores geometry data in a G-buffer then shades in a separate pass — better for many lights", "Forward rendering is always superior", "Deferred rendering only works for 2D"], answer: 1 },
+    ],
+
+    // ── QA / TEST ENGINEER ────────────────────────────────────────
+    "qa-test-engineer": [
+      { topic: "Test Case Design", difficulty: "easy", text: "What does QA stand for?", options: ["Quick Access", "Quality Assurance", "Queue Analysis", "Query Application"], answer: 1 },
+      { topic: "Test Case Design", difficulty: "easy", text: "What is a test case?", options: ["A bug report form", "A documented set of conditions and steps used to verify software behaves as expected", "A testing tool license", "A sprint planning document"], answer: 1 },
+      { topic: "Bug Reporting & Tracking", difficulty: "easy", text: "What is a software bug?", options: ["A planned feature stub", "A defect or flaw that causes software to produce incorrect or unexpected results", "A testing framework", "A code design pattern"], answer: 1 },
+      { topic: "Manual Testing", difficulty: "easy", text: "What is regression testing?", options: ["Testing only brand-new features", "Re-testing existing functionality after changes to ensure nothing is unintentionally broken", "Testing server performance", "Security vulnerability scanning"], answer: 1 },
+      { topic: "Manual Testing", difficulty: "easy", text: "What is manual testing?", options: ["Running automated test scripts", "Testing performed by a human tester who manually executes test cases without automation tools", "Unit test generation", "Load testing with a tool"], answer: 1 },
+      { topic: "Unit & Integration Testing", difficulty: "medium", text: "What is unit testing?", options: ["Testing the entire application end-to-end", "Testing individual functions or components in isolation to verify they work correctly", "Integration testing of services", "Load and performance testing"], answer: 1 },
+      { topic: "Manual Testing", difficulty: "medium", text: "What is the difference between black-box and white-box testing?", options: ["Black-box always uses automation; white-box is manual", "Black-box tests without internal code knowledge; white-box tests with full internal knowledge", "They are the same technique", "Black-box tests the database; white-box tests the UI"], answer: 1 },
+      { topic: "Test Case Design", difficulty: "medium", text: "What is a test plan?", options: ["A list of all reported bugs", "A document describing the testing scope, approach, objectives, schedule, and resources", "A code review checklist", "A deployment runbook"], answer: 1 },
+      { topic: "CI/CD for Testing", difficulty: "medium", text: "What is continuous testing in a CI/CD pipeline?", options: ["Running tests only before a major release", "Automatically running the test suite at every stage of the pipeline to get fast feedback", "Manual testing once a sprint", "Performance testing in production only"], answer: 1 },
+      { topic: "Test Automation (Selenium/Cypress)", difficulty: "medium", text: "What is mocking in unit tests?", options: ["Creating actual database records for tests", "Replacing real dependencies with controlled fake versions to isolate the unit under test", "A UI testing screenshot comparison", "measuring code coverage"], answer: 1 },
+      { topic: "Test-Driven Development (TDD)", difficulty: "hard", text: "What is mutation testing?", options: ["Changing test cases randomly", "Introducing small deliberate changes (mutations) to the source code to verify tests can detect them", "A load-testing variant", "A security fuzzing method"], answer: 1 },
+      { topic: "Performance Testing (JMeter)", difficulty: "hard", text: "What is chaos testing?", options: ["Randomly editing source code", "Deliberately injecting failures (network partitions, process kills) into a system to test its resilience", "A UI layout testing approach", "An automated regression scan"], answer: 1 },
+      { topic: "Test-Driven Development (TDD)", difficulty: "hard", text: "What is Test-Driven Development (TDD)?", options: ["Writing all tests after the code is complete", "Writing a failing test first, then writing only enough code to make it pass, then refactoring", "A deployment strategy", "A code review practice"], answer: 1 },
+      { topic: "Unit & Integration Testing", difficulty: "hard", text: "What does the testing pyramid recommend?", options: ["Equal numbers of all test types", "Many fast unit tests, fewer integration tests, and even fewer slow E2E tests at the top", "Only E2E tests matter", "Avoid unit tests for speed"], answer: 1 },
+      { topic: "Test Automation (Selenium/Cypress)", difficulty: "hard", text: "What is property-based testing?", options: ["Testing UI properties like colors", "Automatically generating many random inputs to find edge cases that violate specifications", "Testing RESTful API properties", "A load-testing form"], answer: 1 },
+    ],
+
+    // ── DATABASE ADMINISTRATOR ────────────────────────────────────
+    "database-administrator": [
+      { topic: "SQL & Relational Databases", difficulty: "easy", text: "What does DBMS stand for?", options: ["Database Backup Management System", "Database Management System", "Dynamic Business Management System", "Data Batch Mining System"], answer: 1 },
+      { topic: "SQL & Relational Databases", difficulty: "easy", text: "What is a primary key?", options: ["Always the first column", "A column (or set of columns) that uniquely identifies each row in a table", "A foreign key equivalent", "An index for faster queries only"], answer: 1 },
+      { topic: "SQL & Relational Databases", difficulty: "easy", text: "What does `SELECT * FROM users` do?", options: ["Deletes all users", "Retrieves all columns and all rows from the users table", "Creates a new users table", "Updates all user records"], answer: 1 },
+      { topic: "SQL & Relational Databases", difficulty: "easy", text: "What is a foreign key?", options: ["A key belonging to another database", "A column that references the primary key in another table to enforce relational integrity", "An alias for a primary key", "An index type"], answer: 1 },
+      { topic: "SQL & Relational Databases", difficulty: "easy", text: "What does SQL stand for?", options: ["Structured Query Language", "Simple Question Language", "System Query Loader", "Secure Query Line"], answer: 0 },
+      { topic: "Database Normalization", difficulty: "medium", text: "What is database normalization?", options: ["Making all tables as large as possible", "Organizing data into normal forms to reduce redundancy and ensure referential integrity", "Encrypting the database", "Scheduling regular backups"], answer: 1 },
+      { topic: "Indexing & Query Optimization", difficulty: "medium", text: "What is an index in a database?", options: ["A backup copy of a table", "A data structure that speeds up query lookups at the cost of additional storage and write overhead", "A type of primary key", "A trigger function"], answer: 1 },
+      { topic: "ACID Properties", difficulty: "medium", text: "What do the ACID properties guarantee?", options: ["Speed and compression", "Atomicity, Consistency, Isolation, and Durability for reliable database transactions", "Automatic index creation", "NoSQL compatibility"], answer: 1 },
+      { topic: "Stored Procedures & Triggers", difficulty: "medium", text: "What is a stored procedure?", options: ["A built-in table backup", "A precompiled set of SQL statements stored in the database and executed as a named routine", "A view definition", "An index maintenance job"], answer: 1 },
+      { topic: "Indexing & Query Optimization", difficulty: "medium", text: "What is the key difference between DELETE and TRUNCATE?", options: ["They are identical", "DELETE removes specific rows row-by-row with logging; TRUNCATE removes all rows instantly with minimal logging", "DELETE is always faster", "TRUNCATE supports a WHERE clause"], answer: 1 },
+      { topic: "Replication & Sharding", difficulty: "hard", text: "What is database sharding?", options: ["Creating additional indexes", "Horizontally partitioning data across multiple database instances to scale out", "Replicating data to a standby", "Compressing large tables"], answer: 1 },
+      { topic: "Indexing & Query Optimization", difficulty: "hard", text: "What is query plan analysis (EXPLAIN) used for?", options: ["Documenting queries", "Examining how the database engine executes a query to identify and fix performance bottlenecks", "Schema migration planning", "Index rebuilding only"], answer: 1 },
+      { topic: "ACID Properties", difficulty: "hard", text: "What is a deadlock in databases?", options: ["A slow-running query", "A situation where two or more transactions each wait for the other's locked resource, halting both", "A failed backup operation", "An index corruption event"], answer: 1 },
+      { topic: "Replication & Sharding", difficulty: "hard", text: "What is database replication?", options: ["Archiving data to files", "Continuously copying data to one or more replica servers for read scaling and failover", "Compressing database backups", "Running schema migrations"], answer: 1 },
+      { topic: "ACID Properties", difficulty: "hard", text: "What is eventual consistency vs strong consistency?", options: ["They guarantee the same thing", "Strong consistency ensures all reads see the latest write immediately; eventual allows temporary staleness that converges", "Strong consistency is always chosen in distributed systems", "Eventual consistency is only for SQL"], answer: 1 },
+    ],
+
+    // ── SITE RELIABILITY ENGINEER ─────────────────────────────────
+    "site-reliability-engineer": [
+      { topic: "SLOs, SLIs & Error Budgets", difficulty: "easy", text: "What does SRE stand for?", options: ["System Reliability Expert", "Site Reliability Engineering", "Software Release Engineering", "Server Resource Engine"], answer: 1 },
+      { topic: "Monitoring & Alerting", difficulty: "easy", text: "What is uptime?", options: ["Planned maintenance time", "The percentage of time a system is operational and available to users", "The time it takes to boot a server", "Average memory usage"], answer: 1 },
+      { topic: "Monitoring & Alerting", difficulty: "easy", text: "What does SLA stand for?", options: ["Service Level Agreement", "Software License Agreement", "System Load Average", "Secure Layer Architecture"], answer: 0 },
+      { topic: "Incident Management", difficulty: "easy", text: "What is an on-call rotation?", options: ["Daily team standup meetings", "A schedule determining who is responsible for responding to production incidents outside business hours", "A sprint ceremony", "A deployment schedule"], answer: 1 },
+      { topic: "Monitoring & Alerting", difficulty: "easy", text: "What is monitoring in the context of SRE?", options: ["Writing application code", "Continuously observing system health, performance, and availability metrics", "A deployment strategy", "A sprint planning method"], answer: 1 },
+      { topic: "SLOs, SLIs & Error Budgets", difficulty: "medium", text: "What is an SLO (Service Level Objective)?", options: ["A team goal document unrelated to uptime", "A specific measurable target for service reliability (e.g., 99.9% request success in 30 days)", "A security policy", "A deployment pipeline config"], answer: 1 },
+      { topic: "SLOs, SLIs & Error Budgets", difficulty: "medium", text: "What is an error budget?", options: ["A financial budget for outages", "The allowed amount of downtime or error rate before the SLO target is breached", "A monitoring alert threshold", "A logging retention policy"], answer: 1 },
+      { topic: "Observability", difficulty: "medium", text: "What is observability in the context of distributed systems?", options: ["External monitoring only", "The ability to understand a system's internal state from its external outputs: logs, metrics, and traces", "A deployment method", "A security scanning approach"], answer: 1 },
+      { topic: "Incident Management", difficulty: "medium", text: "What is MTTR (Mean Time to Recovery)?", options: ["Time to deploy a new release", "The average time to restore a service to normal after an incident", "Time between failures", "Time to detect a failure"], answer: 1 },
+      { topic: "Post-Mortems & RCA", difficulty: "medium", text: "What is a blameless post-mortem?", options: ["A pre-deployment checklist", "A structured analysis after an incident to find root cause and take corrective actions without blaming individuals", "A performance load test", "A peer code review"], answer: 1 },
+      { topic: "Automation & Toil Reduction", difficulty: "hard", text: "What is toil in the context of SRE?", options: ["Enjoyable and creative work", "Manual, repetitive, automatable operational work that scales linearly with service growth", "A deployment pattern", "A testing approach"], answer: 1 },
+      { topic: "Observability", difficulty: "hard", text: "How does SRE differ from DevOps?", options: ["They are completely identical practices", "SRE is a specific, opinionated implementation of DevOps principles using software engineering to solve operations problems", "SRE only does monitoring; DevOps writes code", "DevOps is more engineering-focused"], answer: 1 },
+      { topic: "Observability", difficulty: "hard", text: "What is distributed tracing?", options: ["Log aggregation into a single file", "Tracking a single request's journey across multiple microservices to identify latency and failures", "An alerting rule configuration", "A deployment canary strategy"], answer: 1 },
+      { topic: "Capacity Planning", difficulty: "hard", text: "What is capacity planning in SRE?", options: ["Recruiting plan for the SRE team", "Forecasting and provisioning the right amount of resources to handle current and future traffic without over-provisioning", "A cost reduction strategy only", "A monitoring alert tuning technique"], answer: 1 },
+      { topic: "SLOs, SLIs & Error Budgets", difficulty: "hard", text: "What are the four golden signals in SRE monitoring?", options: ["CPU, RAM, Disk, Network", "Latency, Traffic (Throughput), Errors, and Saturation", "Uptime, Downtime, Speed, Memory", "Requests, Responses, Timeouts, Crashes"], answer: 1 },
+    ],
+
+    // ── DATA ENGINEER ─────────────────────────────────────────────
+    "data-engineer": [
+      { topic: "ETL / ELT Pipelines", difficulty: "easy", text: "What does ETL stand for?", options: ["Extra Type Language", "Extract, Transform, Load", "Event Trigger Logic", "Elastic Table Loader"], answer: 1 },
+      { topic: "Data Warehousing (Snowflake/BigQuery)", difficulty: "easy", text: "What is a data warehouse?", options: ["A physical warehouse with servers", "A centralized analytical repository integrating structured data from multiple sources", "A real-time streaming platform", "An operational OLTP database"], answer: 1 },
+      { topic: "Apache Kafka", difficulty: "easy", text: "What is Apache Kafka?", options: ["A relational database", "A distributed event-streaming platform for high-throughput, fault-tolerant data pipelines", "A data visualization tool", "A batch processing library"], answer: 1 },
+      { topic: "ETL / ELT Pipelines", difficulty: "easy", text: "What is a data pipeline?", options: ["A water pipe metaphor", "An automated sequence of steps that moves and transforms data from source to destination", "A database backup strategy", "A data visualization dashboard"], answer: 1 },
+      { topic: "SQL & dbt", difficulty: "easy", text: "Which languages are most commonly used in data engineering?", options: ["Java and C++ only", "Python and SQL", "R and Scala only", "Go and Rust"], answer: 1 },
+      { topic: "Apache Spark", difficulty: "medium", text: "What is Apache Spark?", options: ["A relational database engine", "A distributed in-memory data processing engine for large-scale batch and stream processing", "An ETL scheduling tool only", "A data visualization library"], answer: 1 },
+      { topic: "Data Warehousing (Snowflake/BigQuery)", difficulty: "medium", text: "What is the key difference between OLAP and OLTP?", options: ["No practical difference", "OLAP is optimized for complex analytical aggregations; OLTP is optimized for high-frequency transactional operations", "OLAP is newer than OLTP", "OLTP is used for data warehouses"], answer: 1 },
+      { topic: "Data Modeling", difficulty: "medium", text: "What is data partitioning in big data systems?", options: ["Encrypting sensitive data", "Dividing large datasets into smaller, logical parts for parallel processing and optimized query performance", "A full backup method", "A visualization grouping technique"], answer: 1 },
+      { topic: "Data Lakes", difficulty: "medium", text: "What is schema-on-read vs schema-on-write?", options: ["They perform the same way", "Schema-on-write validates structure on insert (RDBMS); schema-on-read applies structure at query time (data lake)", "Schema-on-read is only for NoSQL", "Schema-on-write is always more flexible"], answer: 1 },
+      { topic: "Data Lakes", difficulty: "medium", text: "What is a data lake?", options: ["A type of RDBMS", "A centralized repository storing raw, unstructured, and semi-structured data at scale for future analysis", "A streaming event bus", "A BI dashboard platform"], answer: 1 },
+      { topic: "ETL / ELT Pipelines", difficulty: "hard", text: "What is the Lambda architecture?", options: ["A Python-specific concept", "A data processing architecture combining batch and real-time streaming layers to provide complete, low-latency views", "A single-stage ETL method", "A machine learning pipeline"], answer: 1 },
+      { topic: "Data Quality & Lineage", difficulty: "hard", text: "What is data lineage?", options: ["A data deletion policy", "Tracking data's origin, movement, transformations, and dependencies throughout its lifecycle", "A data backup strategy", "A compression algorithm for parquet files"], answer: 1 },
+      { topic: "Apache Kafka", difficulty: "hard", text: "What is log compaction in Apache Kafka?", options: ["Deleting all old log data", "Retaining only the latest value per message key so consumers always have the current state", "A Kafka partitioning rebalance strategy", "A serialization format optimization"], answer: 1 },
+      { topic: "Apache Spark", difficulty: "hard", text: "Why is column-oriented (columnar) storage preferred for analytics?", options: ["It is always the fastest for all workloads", "Columnar storage allows reading only the needed columns, enabling faster aggregations and better compression for analytical queries", "Columnar is always used in OLTP systems", "Row-based is better for data lakes"], answer: 1 },
+      { topic: "Data Quality & Lineage", difficulty: "hard", text: "What is Change Data Capture (CDC)?", options: ["A data visualization refresh method", "A technique that tracks and captures row-level changes in a source database for replication or streaming to downstream systems", "A full-table snapshot backup", "A data cleaning workflow"], answer: 1 },
+    ],
+
+    // ── AR/VR DEVELOPER ───────────────────────────────────────────
+    "ar-vr-developer": [
+      { topic: "AR vs VR Fundamentals", difficulty: "easy", text: "What does AR stand for?", options: ["Automated Reality", "Augmented Reality", "Advanced Rendering", "Application Runtime"], answer: 1 },
+      { topic: "AR vs VR Fundamentals", difficulty: "easy", text: "What does VR stand for?", options: ["Virtual Reality", "Video Rendering", "Visual Recognition", "Variable Runtime"], answer: 0 },
+      { topic: "AR vs VR Fundamentals", difficulty: "easy", text: "What is the key difference between AR and VR?", options: ["No practical difference", "AR overlays digital content on the real world; VR creates a fully immersive virtual environment", "AR is only for smartphones", "VR is always less expensive to build"], answer: 1 },
+      { topic: "Unity / Unreal for XR", difficulty: "easy", text: "What is Unity used for in AR/VR development?", options: ["Only 2D web games", "A cross-platform engine widely used for building interactive AR/VR experiences and games", "A 3D modeling tool", "A physics simulation only"], answer: 1 },
+      { topic: "AR vs VR Fundamentals", difficulty: "easy", text: "What is a Head-Mounted Display (HMD)?", options: ["A computer monitor", "A wearable display device placed over the eyes for immersive viewing experiences", "A type of motion controller", "A spatial audio speaker system"], answer: 1 },
+      { topic: "6DoF Interaction", difficulty: "medium", text: "What does 6DoF (Six Degrees of Freedom) mean in XR?", options: ["A VR rendering level", "The ability to move and rotate freely along all three spatial axes (X, Y, Z) and three rotational axes", "A haptic feedback intensity level", "A GPU rendering mode"], answer: 1 },
+      { topic: "VR Comfort & UX", difficulty: "medium", text: "What primarily causes motion sickness in VR?", options: ["High-resolution displays", "A mismatch between perceived visual motion and the body's physical sensations (vestibular conflict)", "Low battery levels", "Poor wireless connectivity"], answer: 1 },
+      { topic: "Spatial Audio", difficulty: "medium", text: "What is spatial audio in VR?", options: ["Standard stereo audio output", "3D positional audio that simulates sounds coming from specific virtual locations in space", "Background music in a scene", "Voice chat compression"], answer: 1 },
+      { topic: "Hand & Motion Tracking", difficulty: "medium", text: "What is hand tracking in AR/VR?", options: ["Using physical button controllers only", "Camera-based recognition of hand and finger positions for controller-free interaction", "A haptic glove feature", "A rendering shader effect"], answer: 1 },
+      { topic: "ARKit / ARCore", difficulty: "medium", text: "What is ARKit?", options: ["An Android AR library by Google", "Apple's framework for building augmented reality experiences on iOS devices", "A Unity AR plugin", "A VR headset SDK"], answer: 1 },
+      { topic: "Foveated Rendering", difficulty: "hard", text: "What is foveated rendering in VR?", options: ["Rendering everything at the same resolution", "Rendering high detail only in the area where the user's gaze is focused, saving significant GPU resources", "An anti-aliasing technique", "A texture streaming method"], answer: 1 },
+      { topic: "VR Comfort & UX", difficulty: "hard", text: "What is the vestibulo-ocular reflex (VOR) and why does it matter in VR?", options: ["A physics simulation concept", "A biological reflex stabilizing vision during head movement; VR must match rendering latency to its speed to avoid nausea", "A rendering algorithm", "A tracking calibration method"], answer: 1 },
+      { topic: "6DoF Interaction", difficulty: "hard", text: "What is the difference between inside-out and outside-in tracking?", options: ["No practical difference for users", "Inside-out uses sensors onboard the headset; outside-in requires external base station sensors for tracking", "Inside-out is always less accurate", "Outside-in is more portable"], answer: 1 },
+      { topic: "World Anchoring & Persistence", difficulty: "hard", text: "What is world locking (spatial anchoring) in AR?", options: ["Locking the app to a single scene", "Keeping virtual objects persistently anchored to specific real-world positions across sessions and devices", "A rendering optimization pass", "A physics constraint type"], answer: 1 },
+      { topic: "VR Comfort & UX", difficulty: "hard", text: "What is the vergence-accommodation conflict in VR displays?", options: ["A rendering artifact from temporal aliasing", "Eye strain caused by the mismatch between where the eyes converge (virtual depth) and where the display optics focus (fixed focal plane)", "A tracking synchronization issue", "A controller calibration problem"], answer: 1 },
+    ],
+
+    // ── EMBEDDED SYSTEMS ENGINEER ─────────────────────────────────
+    "embedded-systems-engineer": [
+      { topic: "C/C++ for Embedded", difficulty: "easy", text: "What is an embedded system?", options: ["A cloud-based computing system", "A specialized computer system integrated within a larger device to perform a dedicated function", "A web server cluster", "A mobile application runtime"], answer: 1 },
+      { topic: "Microcontrollers (Arduino/STM32)", difficulty: "easy", text: "What language is most commonly used for embedded programming?", options: ["Python only", "JavaScript", "C and C++", "Java"], answer: 2 },
+      { topic: "Microcontrollers (Arduino/STM32)", difficulty: "easy", text: "What is a microcontroller?", options: ["A large server CPU", "A compact integrated circuit containing a processor, memory, and programmable I/O on a single chip", "A programming language", "A circuit simulation tool"], answer: 1 },
+      { topic: "GPIO & Peripheral Interfaces", difficulty: "easy", text: "What does GPIO stand for?", options: ["General Purpose Internet Output", "General Purpose Input/Output", "Global Process Input Output", "General Processor Interrupt Output"], answer: 1 },
+      { topic: "Microcontrollers (Arduino/STM32)", difficulty: "easy", text: "What is Arduino?", options: ["A proprietary RTOS", "An open-source microcontroller platform commonly used for prototyping embedded systems", "A circuit simulation tool only", "An OS for embedded Linux"], answer: 1 },
+      { topic: "RTOS Concepts", difficulty: "medium", text: "What is an RTOS (Real-Time Operating System)?", options: ["A standard general-purpose OS", "An OS designed to process inputs and produce outputs within strict, guaranteed timing constraints", "A Linux distribution", "A cross-compilation framework"], answer: 1 },
+      { topic: "Watchdog Timers", difficulty: "medium", text: "What is a watchdog timer?", options: ["A monitoring dashboard widget", "A hardware timer that automatically resets the microcontroller if the software fails to respond within a set interval", "A debugging breakpoint tool", "A power management schedule"], answer: 1 },
+      { topic: "SPI / I2C / UART Protocols", difficulty: "medium", text: "What is SPI (Serial Peripheral Interface)?", options: ["A network routing protocol", "A synchronous serial communication protocol for short-distance master-slave device interaction", "A memory bus type", "A power delivery interface"], answer: 1 },
+      { topic: "Memory Management (Flash/RAM)", difficulty: "medium", text: "What is the difference between flash memory and RAM in embedded systems?", options: ["They are functionally identical", "Flash is non-volatile (persists program/data after power-off); RAM is volatile (holds runtime variables)", "Flash is always faster", "RAM stores the firmware binary"], answer: 1 },
+      { topic: "Interrupt Handling", difficulty: "medium", text: "What is interrupt-driven programming?", options: ["Continuously polling hardware registers", "Code execution triggered by hardware or software signals, letting the CPU handle other tasks between events", "A memory allocation technique", "A power-saving polling loop"], answer: 1 },
+      { topic: "RTOS Concepts", difficulty: "hard", text: "What is priority inversion in an RTOS?", options: ["A CPU scheduling preference setting", "When a low-priority task holds a resource needed by a high-priority task, effectively blocking it", "A memory fragmentation issue", "A power management scheduling conflict"], answer: 1 },
+      { topic: "DMA & Low-Power Design", difficulty: "hard", text: "What is DMA (Direct Memory Access)?", options: ["A debugging protocol", "A hardware mechanism enabling peripherals to transfer data to/from memory directly, bypassing the CPU for speed", "A type of interrupt controller", "A power gating feature"], answer: 1 },
+      { topic: "RTOS Concepts", difficulty: "hard", text: "What is the difference between hard and soft real-time systems?", options: ["No practical difference", "Hard real-time has catastrophic consequences for missed deadlines; soft real-time degrades gracefully with late results", "Hard real-time is used for gaming", "Soft real-time is used only for medical devices"], answer: 1 },
+      { topic: "GPIO & Peripheral Interfaces", difficulty: "hard", text: "What is memory-mapped I/O?", options: ["A virtual memory paging technique", "Accessing hardware peripheral registers through the same address space as main memory using standard load/store instructions", "A DMA-exclusive feature", "An interrupt controller mechanism"], answer: 1 },
+      { topic: "Bootloaders & Firmware Updates", difficulty: "hard", text: "What is a bootloader in embedded systems?", options: ["A power supply circuit", "A small program that initializes hardware and loads the main application firmware from storage on startup", "A runtime debugging library", "A hardware abstraction layer"], answer: 1 },
+    ],
+
+    // ── TECHNICAL PRODUCT MANAGER ─────────────────────────────────
+    "technical-product-manager": [
+      { topic: "Product Roadmapping", difficulty: "easy", text: "What does a Product Manager primarily do?", options: ["Writes production code daily", "Defines product vision, prioritizes features, and aligns cross-functional teams to deliver customer value", "Manages only people and budgets", "Runs marketing campaigns"], answer: 1 },
+      { topic: "User Story Writing", difficulty: "easy", text: "What is a user story?", options: ["A marketing case study", "A short, user-centric description of a feature: 'As a <user>, I want <goal> so that <reason>'", "A detailed bug report", "A system architecture diagram"], answer: 1 },
+      { topic: "Product Roadmapping", difficulty: "easy", text: "What is a product roadmap?", options: ["A project Gantt chart only", "A visual plan communicating product direction, priorities, and planned features over a timeline", "A sprint iteration plan", "A deployment schedule"], answer: 1 },
+      { topic: "Agile / Scrum", difficulty: "easy", text: "What is an MVP (Minimum Viable Product)?", options: ["A fully polished product", "The simplest version of a product that delivers core value and allows validated learning from real users", "A high-fidelity prototype", "A feature specification document"], answer: 1 },
+      { topic: "Agile / Scrum", difficulty: "easy", text: "What is a sprint in Agile/Scrum?", options: ["A speed metric", "A fixed, short time-boxed iteration (typically 1–4 weeks) in which a team delivers a working increment", "A year-long planning cycle", "A design-only phase"], answer: 1 },
+      { topic: "OKRs & Metrics", difficulty: "medium", text: "What is a product backlog?", options: ["A list of Production bugs only", "A prioritized list of all user stories, features, bugs, and improvements to be worked on", "A marketing content calendar", "A project milestone tracker"], answer: 1 },
+      { topic: "OKRs & Metrics", difficulty: "medium", text: "What is OKR (Objectives and Key Results)?", options: ["A project management billing framework", "A goal-setting framework pairing ambitious objectives with specific, measurable key results", "A technical architecture model", "A design system methodology"], answer: 1 },
+      { topic: "Technical Feasibility Assessment", difficulty: "medium", text: "What is the difference between a Product Manager and a Project Manager?", options: ["They are exactly the same role", "PM owns what to build and why; Project Manager manages how and when delivery happens", "PM only manages timelines", "Project Manager owns the product strategy"], answer: 1 },
+      { topic: "Technical Feasibility Assessment", difficulty: "medium", text: "What is a feature flag?", options: ["A UI badge component", "A mechanism enabling or disabling features in the live product without a new code deployment", "A bug tracking label", "An API rate-limit response code"], answer: 1 },
+      { topic: "User Story Writing", difficulty: "medium", text: "What are acceptance criteria?", options: ["Design review requirements", "The specific, testable conditions a feature must satisfy to be accepted by the product owner", "A code review checklist", "A user research consent form"], answer: 1 },
+      { topic: "Prioritization Frameworks", difficulty: "hard", text: "What is the Jobs-To-Be-Done (JTBD) framework?", options: ["A task management Kanban board", "A theory that customers 'hire' products to accomplish progress in specific situations in their lives", "A specific Agile ceremony", "An OKR measurement system"], answer: 1 },
+      { topic: "Prioritization Frameworks", difficulty: "hard", text: "What is the Kano model used for?", options: ["Sprint planning capacity", "Categorizing features by their impact on customer satisfaction: Basic, Performance, and Delight attributes", "An OKR grading method", "A sprint retrospective tool"], answer: 1 },
+      { topic: "Product Analytics", difficulty: "hard", text: "What is product-market fit?", options: ["A marketing funnel metric", "The point where a product satisfies strong market demand and users find it indispensable", "A financial profitability threshold", "A design milestone in the process"], answer: 1 },
+      { topic: "OKRs & Metrics", difficulty: "hard", text: "What is a North Star Metric?", options: ["A vanity metric like page views", "The single most important metric that best captures the core value a product delivers to customers", "A revenue-only KPI", "A team performance bonus target"], answer: 1 },
+      { topic: "Technical Feasibility Assessment", difficulty: "hard", text: "What is technical debt and how should a PM handle it?", options: ["Money borrowed to buy developer tools", "Accumulated shortcuts or suboptimal code/architecture that must be balanced against new feature work in the roadmap", "A purely engineering concern that PMs should ignore", "A policy to always prioritize new features over maintenance"], answer: 1 },
+    ],
+  };
+
+  const questions = q[roleDoc.slug];
+  if (!questions) {
+    console.warn(`No questions found for slug: ${roleDoc.slug} — skipping.`);
+    return [];
+  }
+  return questions.map((qObj) => ({ ...qObj, role: roleDoc._id }));
+};
+
+
+
+// ── Main seed function ─────────────────────────────────────────────────────────
+const seed = async () => {
+  try {
+    await mongoose.connect(process.env.MONGO_URI);
+    console.log("MongoDB connected for seeding...");
+
+    // Wipe existing roles and questions
+    await Role.deleteMany({});
+    await Question.deleteMany({});
+    console.log("Cleared existing roles and questions.");
+
+    for (const roleData of ROLES) {
+      const role = await Role.create(roleData);
+      const questions = buildQuestions(role);
+      await Question.insertMany(questions);
+      console.log(`Seeded: ${role.name} (${questions.length} questions)`);
+    }
+
+    console.log("\nSeed complete! All roles and questions are ready.");
+    await mongoose.disconnect();
+    process.exit(0);
+  } catch (err) {
+    console.error("Seed failed:", err.message);
+    process.exit(1);
+  }
+};
+
+seed();
